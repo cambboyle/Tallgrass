@@ -100,7 +100,7 @@ export async function getGameData(slug: string): Promise<{ data: GameData | null
     if (res.ok) data = (await res.json()) as GameData;
   }
   const entry = { at: Date.now(), data, uploadedAt: row?.created_at ?? null };
-  memo.set(slug, entry);
+  if (data) memo.set(slug, entry); // never remember "nothing uploaded yet"
   return entry;
 }
 

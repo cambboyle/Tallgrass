@@ -5,9 +5,9 @@ import GameNav from "@/components/GameNav";
 import NoData from "@/components/NoData";
 import SpeciesTable from "@/components/SpeciesTable";
 
-export const revalidate = 3600;
+export const revalidate = 600; // new uploads show within 10 minutes
 
-// Rendered on first visit, then cached for an hour.
+// Rendered on first visit, then cached.
 export async function generateStaticParams() {
   return [];
 }
