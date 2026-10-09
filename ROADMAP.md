@@ -86,9 +86,9 @@ Launch supports three games, done properly: **Radical Red, HeartGold Generations
 
 ### M4: Cloud platform
 - [x] **API and database** (2026-10-09): Supabase (project `ifjlueqhuyaafjuzltoi`, London): schema in `supabase/migrations/`, Edge Functions in `supabase/functions/`. No separate API server for now.
-- [x] **Accounts** (2026-10-09): Discord, GitHub and email sign-in links on the website. End-to-end test pending the Vercel deploy.
-- [x] **Device pairing** (2026-10-09): dashboard Account page shows a code (XXXX-XXXX, 10 minutes); entering it at /link gives the agent its own key (only its hash is stored).
-- [ ] **Public docs website** (built 2026-10-09 in `web/`: Pokémon, species, trainers, areas per focus game; maintainers upload exports from the Library; awaiting Vercel deploy and first uploads):
+- [x] **Accounts** (2026-10-09): Discord, GitHub and email sign-in links on https://tallgrass-delta.vercel.app. Verified with Cam's Discord sign-in.
+- [x] **Device pairing** (2026-10-09, verified with Cam's Pi): dashboard Account page shows a code (XXXX-XXXX, 10 minutes); entering it at /link gives the agent its own key (only its hash is stored).
+- [x] **Public docs website, first version** (2026-10-09): live at https://tallgrass-delta.vercel.app with Radical Red, Unbound and HeartGold Generations uploaded from Cam's Pi. Still to come below:
   - Generated pages per game/hack version, built from M3 data uploaded by agents or maintainers. Only extracted *facts* (stats, learnsets), never sprites or other assets.
   - Curated guides and walkthroughs written in-site.
   - Links to a hack's official docs, with its author's permission where content is copied.
