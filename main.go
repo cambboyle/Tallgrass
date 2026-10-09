@@ -32,7 +32,7 @@ func main() {
 	backupDir := flag.String("backups", "backups", "where save file versions are kept")
 	drasticSaves := flag.String("drastic-saves", "/opt/retropie/configs/nds/drastic/backup", "DraStic's save folder (DS games)")
 	cloudURL := flag.String("cloud", cloud.DefaultURL, "Tallgrass backend (empty to turn accounts off)")
-	siteURL := flag.String("site", "https://tallgrass.vercel.app", "Tallgrass website, where pairing codes are entered")
+	siteURL := flag.String("site", "https://tallgrass-delta.vercel.app", "Tallgrass website, where pairing codes are entered")
 	linkPath := flag.String("link-file", "cloud-link.json", "where this device's account key is kept")
 	exportROM := flag.String("export", "", "write a ROM's game data (species, moves, trainers) as JSON to stdout and exit")
 	flag.Parse()
