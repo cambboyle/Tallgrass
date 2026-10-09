@@ -1,7 +1,7 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getGame, getGameData, type Trainer } from "@/lib/gamedata";
-import { slugify } from "@/lib/types";
+import { getGame, getGameData } from "@/lib/gamedata";
+import { areas, unnamed } from "@/lib/areas";
+import AreaSort from "@/components/AreaSort";
 import GameHeader from "@/components/GameHeader";
 import GameNav from "@/components/GameNav";
 import NoData from "@/components/NoData";
@@ -23,16 +23,9 @@ export default async function Trainers({ params }: PageProps<"/games/[slug]/trai
   const game = await getGame(slug);
   if (!game) notFound();
   const { data, uploadedAt } = await getGameData(slug);
-
-  // Group by the first area each trainer appears in, in map order.
-  const groups = new Map<string, Trainer[]>();
-  for (const t of data?.trainers ?? []) {
-    const area = t.areas?.[0] ?? "";
-    if (!groups.has(area)) groups.set(area, []);
-    groups.get(area)!.push(t);
-  }
-  const areas = [...groups.keys()].filter(Boolean);
-  const elsewhere = groups.get("") ?? [];
+  const withTrainers = data ? areas(data).filter((a) => a.trainers.length) : [];
+  const placed = new Set(withTrainers.flatMap((a) => a.trainers.map((t) => t.id)));
+  const elsewhere = (data?.trainers ?? []).filter((t) => !placed.has(t.id)).length;
 
   return (
     <main>
@@ -41,21 +34,21 @@ export default async function Trainers({ params }: PageProps<"/games/[slug]/trai
       {!data ? <NoData name={game.name} /> : (
         <>
           <p className="muted">{data.trainers.length} battles, by area. Open an area for its full teams.</p>
-          <div className="table-wrap">
-            <table>
-              <thead><tr><th>Area</th><th>Trainers</th></tr></thead>
-              <tbody>
-                {areas.map((a) => (
-                  <tr key={a}>
-                    <td style={{ whiteSpace: "nowrap" }}><Link href={`/games/${slug}/areas/${slugify(a)}`}>{a}</Link></td>
-                    <td className="small">{groups.get(a)!.map((t) => `${t.class} ${t.name}`).join(", ")}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          {elsewhere.length > 0 && (
-            <p className="small muted">{elsewhere.length} more battles aren&apos;t tied to a place (rematches, battle facilities, scripted fights).</p>
+          <AreaSort
+            head={["Area", "Highest level", "Trainers"]}
+            rows={withTrainers.map((a) => ({
+              name: a.name,
+              href: `/games/${slug}/areas/${a.slug}`,
+              level: a.level,
+              unnamed: unnamed(a.name),
+              cells: [
+                Math.max(...a.trainers.map((t) => Math.max(...t.party.map((p) => p.level)))),
+                a.trainers.map((t) => `${t.class} ${t.name}`).join(", "),
+              ],
+            }))}
+          />
+          {elsewhere > 0 && (
+            <p className="small muted">{elsewhere} more battles aren&apos;t tied to a place (rematches, battle facilities, scripted fights).</p>
           )}
         </>
       )}

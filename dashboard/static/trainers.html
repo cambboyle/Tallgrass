@@ -58,6 +58,31 @@ function firstOfEach(list) {
   });
 }
 
+// Journey order: an area's place in the game is the median of its trainers'
+// highest levels (leaving out placeholder teams shared by 3+ names); battle
+// facilities and areas without a level go last. Same as the website.
+let areaLevel = new Map();
+function computeLevels() {
+  const key = (t) => t.party.map((p) => `${p.species}@${p.level}`).join(",");
+  const names = new Map();
+  for (const t of data.trainers) {
+    if (!names.has(key(t))) names.set(key(t), new Set());
+    names.get(key(t)).add(t.name);
+  }
+  const levels = new Map();
+  for (const t of data.trainers) {
+    if (names.get(key(t)).size >= 3) continue;
+    const top = Math.max(...t.party.map((p) => p.level));
+    for (const a of t.areas || []) {
+      if (!levels.has(a)) levels.set(a, []);
+      levels.get(a).push(top);
+    }
+  }
+  areaLevel = new Map([...levels].map(([a, l]) => [a, l.sort((x, y) => x - y)[Math.floor((l.length - 1) / 2)]]));
+}
+const facility = (a) => /battle (frontier|tower|factory|hall|castle|arcade|pike|palace|dome|pyramid|tent)|trainer tower|fight area/i.test(a);
+const rank = (a) => (facility(a) || a.startsWith("Elsewhere") ? Infinity : areaLevel.get(a) ?? Infinity);
+
 function render() {
   const q = document.getElementById("search").value.trim().toLowerCase();
   let list = data.trainers;
@@ -80,8 +105,7 @@ function render() {
     if (!groups.has(area)) groups.set(area, []);
     groups.get(area).push(t);
   }
-  const rank = (a) => data.areaOrder?.[a] ?? Infinity;
-  const order = [...groups.keys()].sort((a, b) => rank(a) - rank(b));
+  const order = [...groups.keys()].sort((a, b) => rank(a) - rank(b) || a.localeCompare(b, "en", { numeric: true }));
   el.innerHTML = order.map((a) => `<section><h2 class="area">${esc(a)} <span class="sub">${groups.get(a).length}</span></h2>
     ${groups.get(a).map(trainerHTML).join("")}</section>`).join("");
 }
@@ -94,6 +118,7 @@ async function load() {
     return;
   }
   data = await res.json();
+  computeLevels();
   document.getElementById("title").textContent = `${data.game || "Game"} trainers`;
   document.title = `${data.game || "Game"} trainers`;
   document.getElementById("status").textContent = `${data.trainers.length} battles`;
