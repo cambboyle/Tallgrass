@@ -68,7 +68,8 @@ type Server struct {
 	detect  func() (*emulator.Running, error) // nil when we can't see processes
 	running *emulator.Running                 // guarded by mu
 	info    *GameInfo
-	dsLive  *dsLive // following a DS game in DraStic; poller only
+	dsLive  *dsLive     // following a DS game in DraStic; poller only
+	cloud   *cloudState // account linking; nil when off
 
 	mu      sync.Mutex
 	state   []byte        // latest State as JSON
@@ -411,6 +412,10 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/trainers", s.handleTrainers)
 	mux.HandleFunc("GET /api/export", s.handleExport)
 	mux.HandleFunc("GET /api/map", s.handleMap)
+	mux.HandleFunc("GET /api/cloud", s.handleCloud)
+	mux.HandleFunc("POST /api/cloud/link", s.handleCloudLink)
+	mux.HandleFunc("POST /api/cloud/unlink", s.handleCloudUnlink)
+	mux.HandleFunc("POST /api/cloud/upload", s.handleCloudUpload)
 	mux.HandleFunc("GET /api/saves/sprite", s.handleROMSprite)
 	return mux
 }

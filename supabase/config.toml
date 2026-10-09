@@ -1,0 +1,18 @@
+# Tallgrass Supabase project. Functions check callers themselves: agents
+# use device keys, the website sends the user's session.
+project_id = "ifjlueqhuyaafjuzltoi"
+
+[functions.pair-start]
+verify_jwt = false
+
+[functions.pair-claim]
+verify_jwt = false
+
+[functions.pair-poll]
+verify_jwt = false
+
+[functions.device]
+verify_jwt = false
+
+[functions.gamedata-upload]
+verify_jwt = false

@@ -234,3 +234,7 @@ button.link { font: inherit; color: var(--text); background: none; border: 0; pa
 .route-trainers .rt { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; font-size: 14px; }
 .route-trainers .rt img { width: 32px; height: 32px; image-rendering: pixelated; margin: -4px -4px; }
 .sub a, .method h3 a { color: var(--text); text-underline-offset: 2px; }
+
+/* Account page */
+.pair-code { font: 600 34px/1.2 ui-monospace, Menlo, monospace; letter-spacing: .12em; margin: 8px 0 12px; }
+.btn.primary { background: var(--good); border-color: var(--good); color: #fff; }

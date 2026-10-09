@@ -172,6 +172,14 @@ Also from ROM, via header pointers: front pics `0x08000128`, normal palettes `0x
 - **Evolution methods:** CFRU 16–28 are shared; later numbers differ per hack (`speciesData.evolutionScheme`). Megas list a no-item entry back to their base form (skipped).
 - Headless Chrome can't go narrower than 500px: check phone layouts with 390px iframes in a page served over HTTP (file:// pages can't load them).
 
+## Cloud (M4)
+
+- **Repo:** `git@github.com:cambboyle/Tallgrass.git` (private). Commit as Cameron Boyle <cambboyle@gmail.com> (repo-local config); **never add Claude attribution** to commits or PRs.
+- **Supabase project** `ifjlueqhuyaafjuzltoi` (London). Schema in `supabase/migrations/` (apply with the Supabase MCP `apply_migration`, then keep the file in the repo): `profiles` (auto-created on sign-up; `is_maintainer` set by hand), `devices` (SHA-256 of each device key), `pairing_codes` (server-only), `games` (the three focus games by ROM SHA-1), `game_data` (uploaded exports; files in the public `gamedata` bucket).
+- **Edge Functions** (`supabase/functions/`, all `verify_jwt = false`, callers checked in code): `pair-start` → code + poll secret; `pair-claim` (user session) → creates the device; `pair-poll` → hands the device key over once; `device` (device key) → account info; `gamedata-upload` (device key, maintainers) → stores an export. The MCP deploy takes each function's files plus `_shared/util.ts`.
+- **Agent:** `cloud/` client; dashboard Account page (`/api/cloud*`); device key in `cloud-link.json` (0600, next to the binary). Flags `-cloud`, `-site`, `-link-file`. The anon key is compiled in (public by design).
+- **Website:** `web/` (Next.js 16: `proxy.ts` not middleware, async `params`/`cookies()`, Cache Components turned off in favour of `revalidate` + empty `generateStaticParams` for ISR). Docs read the latest export from Storage (kept in memory 10 min); `GAMEDATA_DIR` serves local exports for previews. Read `web/node_modules/next/dist/docs/` before using a Next API you're unsure of.
+
 ## Journey/tracker gotcha
 
 - The run view must be deterministic: Go map iteration is random, and Pokémon/areas recorded at the same moment tie on time. An unstable order made the SSE state "change" every poll, so the Journey section reshuffled every second (fixed with party-slot order and tie-breaks; `TestViewIsStable`).

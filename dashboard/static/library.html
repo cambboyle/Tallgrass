@@ -8,7 +8,7 @@
 </head>
 <body>
 <header>
-  <div class="brand"><h1>Library</h1><nav><a href="/">Party</a><a href="box.html">Boxes</a><a href="trainers.html">Trainers</a><a href="saves.html">Saves</a><a href="library.html" class="on">Library</a></nav></div>
+  <div class="brand"><h1>Library</h1><nav><a href="/">Party</a><a href="box.html">Boxes</a><a href="trainers.html">Trainers</a><a href="saves.html">Saves</a><a href="library.html" class="on">Library</a><a href="account.html">Account</a></nav></div>
   <div id="status"></div>
 </header>
 <div id="error"></div>
@@ -20,6 +20,8 @@ const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<
 const when = (iso) => new Date(iso).toLocaleString([], { dateStyle: "medium", timeStyle: "short" });
 const mb = (n) => `${Math.round(n / 1048576)} MB`;
 let timer = null;
+let maintainer = false; // linked to a maintainer account: can upload game data
+fetch("/api/cloud").then((r) => (r.ok ? r.json() : null)).then((v) => { maintainer = !!v?.device?.account?.isMaintainer; if (maintainer) load(); });
 
 // verifiedNote says how far a profile has been checked against the game.
 function verifiedNote(r) {
@@ -41,7 +43,7 @@ function romHTML(r) {
   }).join("");
   return `<li class="rom">
     <div class="top"><span class="name">${esc(r.file)}</span>${r.running ? `<span class="pill live">playing</span>` : ""}</div>
-    <div class="sub">${mb(r.size)} · ${status}${r.profile && r.sha1 ? ` · <a href="trainers.html?rom=${r.sha1.slice(0, 12)}">Trainers</a> · <a href="/api/export?rom=${r.sha1.slice(0, 12)}" download title="Species, moves and trainers as JSON">Export data</a>` : ""}</div>
+    <div class="sub">${mb(r.size)} · ${status}${r.profile && r.sha1 ? ` · <a href="trainers.html?rom=${r.sha1.slice(0, 12)}">Trainers</a> · <a href="/api/export?rom=${r.sha1.slice(0, 12)}" download title="Species, moves and trainers as JSON">Export data</a>${maintainer ? ` · <button class="btn" data-upload="${r.sha1.slice(0, 12)}">Upload to Tallgrass</button>` : ""}` : ""}</div>
     ${saves ? `<ul class="rom-saves">${saves}</ul>` : `<div class="sub">No save yet.</div>`}
   </li>`;
 }
@@ -67,6 +69,16 @@ async function load() {
   clearTimeout(timer);
   if (data.hashing) timer = setTimeout(load, 3000); // until every ROM is identified
 }
+
+document.addEventListener("click", async (e) => {
+  const b = e.target.closest("[data-upload]");
+  if (!b) return;
+  b.disabled = true;
+  b.textContent = "Uploading…";
+  const res = await fetch("/api/cloud/upload", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ rom: b.dataset.upload }) });
+  b.textContent = res.ok ? "Uploaded" : "Upload failed";
+  if (!res.ok) document.getElementById("error").textContent = await res.text();
+});
 
 load();
 </script>

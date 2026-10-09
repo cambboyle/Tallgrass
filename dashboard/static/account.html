@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Account</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <div class="brand"><h1>Account</h1><nav><a href="/">Party</a><a href="box.html">Boxes</a><a href="trainers.html">Trainers</a><a href="saves.html">Saves</a><a href="library.html">Library</a><a href="account.html" class="on">Account</a></nav></div>
+  <div id="status"></div>
+</header>
+<div id="error"></div>
+<main id="account" class="saves"></main>
+
+<script>
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+let timer = null;
+
+function html(v) {
+  if (v.linked && v.device) {
+    const who = esc(v.device.account.displayName || "your account");
+    return `<section class="card">
+      <h3 class="panel-title">Linked</h3>
+      <p>This device (<b>${esc(v.device.name)}</b>) is linked to <b>${who}</b>${v.device.account.isMaintainer ? ` <span class="pill ok">maintainer</span>` : ""}.</p>
+      <p class="sub">Manage your devices at <a href="${esc(v.siteUrl)}/account">${esc(v.siteUrl.replace(/^https?:\/\//, ""))}/account</a>.</p>
+      <p style="margin-top:12px"><button class="btn" id="unlink">Unlink this device</button></p>
+    </section>`;
+  }
+  if (v.pairing) {
+    const url = `${v.siteUrl}/link?code=${encodeURIComponent(v.pairing.code)}`;
+    return `<section class="card">
+      <h3 class="panel-title">Enter this code</h3>
+      <p class="pair-code">${esc(v.pairing.code)}</p>
+      <p>Go to <a href="${esc(url)}" target="_blank" rel="noopener">${esc(v.siteUrl.replace(/^https?:\/\//, ""))}/link</a>, sign in and enter the code.
+      This page updates by itself when you're done.</p>
+      <p class="sub">The code works until ${new Date(v.pairing.expiresAt).toLocaleTimeString([], { timeStyle: "short" })}.</p>
+    </section>`;
+  }
+  return `<section class="card">
+    <h3 class="panel-title">Tallgrass account</h3>
+    <p>Link this device to your Tallgrass account. Nothing is uploaded unless you choose to, and the dashboard works the same either way.</p>
+    <p style="margin-top:12px"><button class="btn primary" id="link">Link this device</button></p>
+  </section>`;
+}
+
+async function load() {
+  const res = await fetch("/api/cloud");
+  if (!res.ok) {
+    document.getElementById("error").textContent = await res.text();
+    return;
+  }
+  const v = await res.json();
+  document.getElementById("error").textContent = v.error || "";
+  document.getElementById("status").textContent = v.linked ? "linked" : v.pairing ? "waiting for code" : "not linked";
+  document.getElementById("account").innerHTML = html(v);
+  clearTimeout(timer);
+  if (v.pairing) timer = setTimeout(load, 3000);
+}
+
+document.addEventListener("click", async (e) => {
+  const post = (path) => fetch(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
+  if (e.target.id === "link") {
+    e.target.disabled = true;
+    const res = await post("/api/cloud/link");
+    if (!res.ok) document.getElementById("error").textContent = await res.text();
+    load();
+  }
+  if (e.target.id === "unlink") {
+    if (e.target.dataset.sure !== "1") { e.target.dataset.sure = "1"; e.target.textContent = "Click again to unlink"; return; }
+    await post("/api/cloud/unlink");
+    load();
+  }
+});
+load();
+</script>
+</body>
+</html>
