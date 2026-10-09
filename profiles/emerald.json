@@ -1,0 +1,86 @@
+{
+  "name": "Pokémon Emerald",
+  "generation": 3,
+  "romSha1": [
+    "f3ae088181bf583e55daf962a92bb46f4f1d07b7"
+  ],
+  "verified": [
+    "rom"
+  ],
+  "partyAddress": "0x020244EC",
+  "partySlots": 6,
+  "pokemonSize": 100,
+  "encryptedData": true,
+  "trainer": {
+    "name": "[0x03005D90]",
+    "id": "[0x03005D90]+0xA"
+  },
+  "location": {
+    "mapId": "[0x03005D8C]+0x4",
+    "mapSection": "0x0203732C",
+    "mapNames": "[0x08123B44]",
+    "firstMapSection": 0,
+    "mapNameStride": 8,
+    "mapNameOffset": 4,
+    "mapGroups": "[0x08084AA4]"
+  },
+  "wildEncounters": {
+    "headers": "[0x080B4D48]"
+  },
+  "pokedex": {
+    "caught": "[0x03005D90]+0x28",
+    "seen": "[0x03005D90]+0x5C",
+    "flagBytes": 52,
+    "speciesToNational": "[0x0806D448]"
+  },
+  "saveFile": {
+    "sectorDataSize": "0xF80",
+    "verifyChecksums": false,
+    "partyOffset": "0x238",
+    "boxMonSize": 80,
+    "boxes": 14,
+    "totalBoxes": 14,
+    "boxNames": "0x8344",
+    "dexSeen": {
+      "block": 2,
+      "offset": "0x5C"
+    },
+    "dexCaught": {
+      "block": 2,
+      "offset": "0x28"
+    },
+    "ram": {
+      "saveBlock1": "[0x03005D8C]",
+      "saveBlock2": "[0x03005D90]",
+      "storage": "[0x03005D94]"
+    }
+  },
+  "experience": {
+    "baseStats": "[0x080001BC]",
+    "table": "[0x080592C4]",
+    "rowLength": 101
+  },
+  "speciesData": {
+    "typeNames": "[0x080166F4]",
+    "abilityNames": "[0x080001C0]",
+    "abilityNameLength": 13,
+    "hiddenAbility": false,
+    "learnsets": "[0x0806930C]",
+    "cfruLearnsets": false,
+    "evolutions": "[0x0806D140]",
+    "evolutionsPerSpecies": 5,
+    "speciesCount": 412,
+    "tmMoves": "[0x081B6D10]",
+    "tmLearnsets": "[0x0806E048]",
+    "tmLearnsetSize": 8,
+    "tutorMoves": "[0x081B236C]",
+    "tutorLearnsets": "[0x081B2390]",
+    "tutorLearnsetSize": 4,
+    "eggMoves": "[0x080703F0]"
+  },
+  "trainers": {
+    "table": "[0x0803587C]",
+    "classNames": "[0x080183B4]",
+    "classNameLength": 13
+  }
+}

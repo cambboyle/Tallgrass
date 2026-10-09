@@ -1,0 +1,84 @@
+{
+  "name": "Pokémon FireRed (US)",
+  "generation": 3,
+  "romSha1": [
+    "41cb23d8dccc8ebd7c649cd8fbb58eeace6e2fdc"
+  ],
+  "verified": [],
+  "partyAddress": "0x02024284",
+  "partySlots": 6,
+  "pokemonSize": 100,
+  "encryptedData": true,
+  "trainer": {
+    "name": "[0x0300500C]",
+    "id": "[0x0300500C]+0xA"
+  },
+  "location": {
+    "mapId": "[0x03005008]+0x4",
+    "mapSection": "0x02036E10",
+    "mapNames": "[0x080C0C94]",
+    "firstMapSection": 88,
+    "mapGroups": "[0x0805524C]"
+  },
+  "wildEncounters": {
+    "headers": "[0x08082990]"
+  },
+  "pokedex": {
+    "caught": "[0x0300500C]+0x28",
+    "seen": "[0x0300500C]+0x5C",
+    "flagBytes": 52,
+    "speciesToNational": "[0x080432B0]"
+  },
+  "saveFile": {
+    "sectorDataSize": "0xF80",
+    "verifyChecksums": true,
+    "block2Size": "0xF24",
+    "block1Size": "0x3D68",
+    "storageSize": "0x83D0",
+    "boxMonSize": 80,
+    "boxes": 14,
+    "totalBoxes": 14,
+    "boxNames": "0x8344",
+    "dexSeen": {
+      "block": 2,
+      "offset": "0x5C"
+    },
+    "dexCaught": {
+      "block": 2,
+      "offset": "0x28"
+    },
+    "ram": {
+      "saveBlock1": "[0x03005008]",
+      "saveBlock2": "[0x0300500C]",
+      "storage": "[0x03005010]"
+    }
+  },
+  "experience": {
+    "baseStats": "[0x080001BC]",
+    "table": "[0x0802FFB8]",
+    "rowLength": 101
+  },
+  "speciesData": {
+    "typeNames": "[0x080309C8]",
+    "abilityNames": "[0x080001C0]",
+    "abilityNameLength": 13,
+    "hiddenAbility": false,
+    "learnsets": "[0x0803EA7C]",
+    "cfruLearnsets": false,
+    "evolutions": "[0x08042F6C]",
+    "evolutionsPerSpecies": 5,
+    "speciesCount": 412,
+    "tmMoves": "[0x08125A8C]",
+    "tmLearnsets": "[0x08043C68]",
+    "tutorMoves": "[0x08120BE4]",
+    "tutorLearnsets": "[0x08120C30]",
+    "eggMoves": "[0x08045C50]",
+    "tmLearnsetSize": 8,
+    "tutorLearnsetSize": 2
+  },
+  "trainers": {
+    "table": "[0x08044028]",
+    "classNames": "[0x080D80A0]",
+    "classNameLength": 13
+  }
+}

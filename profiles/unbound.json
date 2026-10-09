@@ -1,0 +1,106 @@
+{
+  "name": "Pokémon Unbound",
+  "generation": 3,
+  "romSha1": [
+    "b4776b82a4c7915d0fadeaa27e013523f99dfd94"
+  ],
+  "verified": [
+    "rom",
+    "save",
+    "live"
+  ],
+  "partyAddress": "0x02024284",
+  "partySlots": 6,
+  "pokemonSize": 100,
+  "encryptedData": false,
+  "trainer": {
+    "name": "[0x0300500C]",
+    "id": "[0x0300500C]+0xA"
+  },
+  "location": {
+    "mapId": "[0x03005008]+0x4",
+    "mapSection": "0x02036E10",
+    "mapNames": "[0x080C0C94]",
+    "firstMapSection": 88,
+    "mapGroups": "0x083526A4"
+  },
+  "wildEncounters": {
+    "headers": "[0x08082990]",
+    "clockHour": "0x03005EA6",
+    "periods": [
+      {
+        "name": "Morning",
+        "headers": "0x08A7DC18",
+        "fromHour": 5,
+        "toHour": 8
+      },
+      {
+        "name": "Day",
+        "fromHour": 8,
+        "toHour": 20
+      },
+      {
+        "name": "Night",
+        "headers": "0x08A7DA74",
+        "fromHour": 20,
+        "toHour": 5
+      }
+    ]
+  },
+  "pokedex": {
+    "caught": "0x020258B9",
+    "seen": "0x0202583C",
+    "flagBytes": 125,
+    "speciesToNational": "[0x080432B0]"
+  },
+  "saveFile": {
+    "signature": "0x01121999",
+    "sectorDataSize": "0xFF0",
+    "verifyChecksums": false,
+    "boxMonSize": 58,
+    "boxes": 19,
+    "totalBoxes": 25,
+    "boxNames": "0x8344",
+    "dexSeen": {
+      "block": 1,
+      "offset": "0x310"
+    },
+    "dexCaught": {
+      "block": 1,
+      "offset": "0x38D"
+    },
+    "ram": {
+      "saveBlock1": "[0x03005008]",
+      "saveBlock2": "[0x0300500C]",
+      "storage": "[0x03005010]"
+    }
+  },
+  "experience": {
+    "baseStats": "[0x080001BC]",
+    "table": "[0x0802FFB8]",
+    "rowLength": 256
+  },
+  "speciesData": {
+    "typeNames": "[0x080309C8]",
+    "abilityNames": "[0x080001C0]",
+    "abilityNameLength": 17,
+    "hiddenAbility": true,
+    "learnsets": "[0x0803EA7C]",
+    "cfruLearnsets": true,
+    "evolutions": "[0x08042F6C]",
+    "evolutionsPerSpecies": 16,
+    "evolutionScheme": "unbound",
+    "tmMoves": "[0x08125A8C]",
+    "tmLearnsets": "[0x08043C68]",
+    "tutorMoves": "[0x08120BE4]",
+    "tutorLearnsets": "[0x08120C30]",
+    "eggMoves": "[0x08045C50]",
+    "tmLearnsetSize": 16,
+    "tutorLearnsetSize": 20
+  },
+  "trainers": {
+    "table": "[0x08044028]",
+    "classNames": "[0x080D80A0]",
+    "classNameLength": 13
+  }
+}

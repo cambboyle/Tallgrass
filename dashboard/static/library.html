@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Library</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <div class="brand"><h1>Library</h1><nav><a href="/">Party</a><a href="box.html">Boxes</a><a href="trainers.html">Trainers</a><a href="saves.html">Saves</a><a href="library.html" class="on">Library</a></nav></div>
+  <div id="status"></div>
+</header>
+<div id="error"></div>
+<main id="library" class="saves"></main>
+
+<script>
+const SYSTEMS = { gba: "Game Boy Advance", gbc: "Game Boy Color", gb: "Game Boy", nds: "Nintendo DS" };
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+const when = (iso) => new Date(iso).toLocaleString([], { dateStyle: "medium", timeStyle: "short" });
+const mb = (n) => `${Math.round(n / 1048576)} MB`;
+let timer = null;
+
+// verifiedNote says how far a profile has been checked against the game.
+function verifiedNote(r) {
+  const v = r.verified || [];
+  if (r.system === "nds") return "";
+  if (v.includes("auto")) return ` <span class="pill" title="Worked out from the ROM automatically; may be incomplete">auto-detected</span>`;
+  if (!v.includes("live")) return ` <span class="pill" title="Checked against: ${esc(v.join(", ") || "nothing yet")}">not yet tested live</span>`;
+  return "";
+}
+
+function romHTML(r) {
+  const status = !r.sha1 ? `<span class="pill">checking…</span>`
+    : r.profile ? `<span class="pill ok">${esc(r.profile)}</span>${verifiedNote(r)}`
+    : `<span class="pill" title="SHA-1 ${esc(r.sha1)}">not supported yet</span>${r.note ? ` <span class="sub">${esc(r.note)}</span>` : ""}`;
+  const saves = r.saves.map((sv) => {
+    const view = r.viewable ? `<a class="btn" href="box.html?file=${encodeURIComponent(sv.path)}">View boxes</a>` : "";
+    return `<li><span>${esc(sv.path.split("/").pop())}</span><time>${when(sv.modified)}</time>
+      <span class="sub">${sv.versions} backup${sv.versions === 1 ? "" : "s"}</span>${view}</li>`;
+  }).join("");
+  return `<li class="rom">
+    <div class="top"><span class="name">${esc(r.file)}</span>${r.running ? `<span class="pill live">playing</span>` : ""}</div>
+    <div class="sub">${mb(r.size)} · ${status}${r.profile && r.sha1 ? ` · <a href="trainers.html?rom=${r.sha1.slice(0, 12)}">Trainers</a> · <a href="/api/export?rom=${r.sha1.slice(0, 12)}" download title="Species, moves and trainers as JSON">Export data</a>` : ""}</div>
+    ${saves ? `<ul class="rom-saves">${saves}</ul>` : `<div class="sub">No save yet.</div>`}
+  </li>`;
+}
+
+async function load() {
+  const res = await fetch("/api/library");
+  if (!res.ok) {
+    document.getElementById("error").textContent = `Couldn't load the library: ${await res.text()}`;
+    return;
+  }
+  const data = await res.json();
+  document.getElementById("error").textContent = "";
+  document.getElementById("status").textContent = data.hashing ? "identifying games…" : "";
+
+  const groups = {};
+  for (const r of data.roms || []) (groups[r.system] ||= []).push(r);
+  document.getElementById("library").innerHTML = Object.keys(groups).length
+    ? Object.entries(groups).map(([sys, roms]) => `<section class="card">
+        <h3 class="panel-title">${esc(SYSTEMS[sys] || sys)} · ${roms.length}</h3>
+        <ul class="roms">${roms.map(romHTML).join("")}</ul></section>`).join("")
+    : `<div class="card empty">No ROMs found.</div>`;
+
+  clearTimeout(timer);
+  if (data.hashing) timer = setTimeout(load, 3000); // until every ROM is identified
+}
+
+load();
+</script>
+</body>
+</html>

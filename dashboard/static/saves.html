@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Save backups</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <div class="brand"><h1>Save backups</h1><nav><a href="/">Party</a><a href="box.html">Boxes</a><a href="trainers.html">Trainers</a><a href="saves.html" class="on">Saves</a><a href="library.html">Library</a></nav></div>
+  <div id="status">loading…</div>
+</header>
+<div id="error"></div>
+<p class="note">A copy is kept every time a save file changes on disk. RetroArch writes it within a minute of an in-game save (autosave every 60 s) and when you close the game.</p>
+<main id="saves" class="saves"></main>
+
+<script>
+const SHOWN = 8; // versions shown before "show all"
+const expanded = new Set();
+let data = null;
+
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+const when = (iso) => new Date(iso).toLocaleString([], { dateStyle: "medium", timeStyle: "short" });
+const kb = (n) => `${(n / 1024).toFixed(n < 10240 ? 1 : 0)} KB`;
+
+function fileHTML(f) {
+  const all = expanded.has(f.path);
+  const versions = all ? f.versions : f.versions.slice(0, SHOWN);
+  const busy = f.inUse ? `disabled title="Close this game first"` : "";
+
+  const rows = versions.map((v, i) => {
+    const q = `file=${encodeURIComponent(f.path)}&version=${encodeURIComponent(v.id)}`;
+    return `<li><time>${when(v.at)}</time>${v === f.versions[0] ? `<span class="latest">latest</span>` : ""}
+      <code title="SHA-256 prefix">${esc(v.hash.slice(0, 8))}</code>
+      <a class="btn" href="box.html?${q}">View</a>
+      <a class="btn" href="/api/saves/download?${q}">Download</a>
+      ${v === f.versions[0] ? "" : `<button class="btn" ${busy} data-file="${esc(f.path)}" data-version="${esc(v.id)}" data-when="${esc(when(v.at))}">Restore</button>`}</li>`;
+  }).join("");
+
+  const more = f.versions.length > SHOWN
+    ? `<button class="btn more" data-toggle="${esc(f.path)}">${all ? "Show fewer" : `Show all ${f.versions.length}`}</button>` : "";
+
+  return `<div class="card save">
+    <div class="top"><span class="name">${esc(f.name)}</span><a class="btn" href="box.html?file=${encodeURIComponent(f.path)}">View boxes</a></div>
+    <div class="sub">${esc(f.system)} · changed ${when(f.modified)} · ${kb(f.size)} · ${f.versions.length} version${f.versions.length === 1 ? "" : "s"}</div>
+    ${f.versions.length ? `<ul class="versions">${rows}</ul>${more}` : `<div class="sub">Backing up shortly…</div>`}
+  </div>`;
+}
+
+function render() {
+  const playing = data.files.filter((f) => f.inUse).map((f) => f.name);
+  const status = document.getElementById("status");
+  status.className = playing.length ? "live" : "";
+  status.textContent = playing.length ? `playing: ${playing.join(", ")}` : "no game running";
+  document.getElementById("saves").innerHTML = data.files.length
+    ? data.files.map(fileHTML).join("") : `<div class="card empty">No save files found.</div>`;
+}
+
+async function load() {
+  try {
+    const res = await fetch("/api/saves");
+    if (!res.ok) throw new Error(await res.text());
+    data = await res.json();
+    document.getElementById("error").textContent = "";
+    render();
+  } catch (e) {
+    document.getElementById("error").textContent = `Couldn't load saves: ${e.message}`;
+  }
+}
+
+document.getElementById("saves").addEventListener("click", async (e) => {
+  const toggle = e.target.closest("[data-toggle]");
+  if (toggle) {
+    const p = toggle.dataset.toggle;
+    expanded.has(p) ? expanded.delete(p) : expanded.add(p);
+    render();
+    return;
+  }
+  const btn = e.target.closest("button[data-version]");
+  if (!btn) return;
+  const { file, version } = btn.dataset;
+  if (!confirm(`Replace ${file} with the version from ${btn.dataset.when}?\n\nThe current save is backed up first, so you can undo this.`)) return;
+
+  const res = await fetch("/api/saves/restore", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ file, version }),
+  });
+  if (!res.ok) alert(`Restore failed: ${await res.text()}`);
+  load();
+});
+
+load();
+setInterval(load, 10000);
+</script>
+</body>
+</html>

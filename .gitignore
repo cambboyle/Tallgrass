@@ -1,0 +1,30 @@
+# Build output
+build/
+
+# Local data (the agent's database, backups and ROM hash cache)
+*.db
+*.db-shm
+*.db-wal
+backups/
+rom-hashes.json
+
+# Never commit games or saves
+*.gba
+*.gb
+*.gbc
+*.nds
+*.sav
+*.srm
+*.dsv
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Web and Supabase tooling
+node_modules/
+.next/
+.vercel/
+supabase/.temp/
+supabase/.branches/

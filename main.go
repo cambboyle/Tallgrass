@@ -1,0 +1,155 @@
+package main
+
+import (
+	"encoding/json"
+	"flag"
+	"fmt"
+	"log"
+	"net"
+	"net/http"
+	"os"
+	"sync"
+	"time"
+
+	"tallgrass/dashboard"
+	"tallgrass/emulator"
+	"tallgrass/gen3"
+	"tallgrass/profile"
+	"tallgrass/retroarch"
+	"tallgrass/saves"
+	"tallgrass/tracker"
+)
+
+func main() {
+	host := flag.String("host", "192.168.0.227:55355", "RetroArch network command address")
+	profilePath := flag.String("profile", "radical-red", "profile to use where the running game can't be detected (not Linux), or a path to a .json profile")
+	listen := flag.String("listen", ":8080", "dashboard address")
+	interval := flag.Duration("interval", time.Second, "how often to read the party")
+	printOnce := flag.Bool("print", false, "print the party to the terminal and exit")
+	dbPath := flag.String("db", "tallgrass.db", "SQLite file for the Nuzlocke log (empty to disable)")
+	romsDir := flag.String("roms", "/home/pi/RetroPie/roms", "RetroPie ROMs folder whose save files get backed up")
+	backupDir := flag.String("backups", "backups", "where save file versions are kept")
+	drasticSaves := flag.String("drastic-saves", "/opt/retropie/configs/nds/drastic/backup", "DraStic's save folder (DS games)")
+	exportROM := flag.String("export", "", "write a ROM's game data (species, moves, trainers) as JSON to stdout and exit")
+	flag.Parse()
+
+	if *exportROM != "" {
+		all, err := profile.All()
+		if err != nil {
+			log.Fatal(err)
+		}
+		gd, err := dashboard.New(all[0], nil).ExportFile(*exportROM, all)
+		if err != nil {
+			log.Fatal(err)
+		}
+		enc := json.NewEncoder(os.Stdout)
+		enc.SetIndent("", " ")
+		if err := enc.Encode(gd); err != nil {
+			log.Fatal(err)
+		}
+		return
+	}
+
+	prof, err := profile.Load(*profilePath)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	conn, err := net.Dial("udp", *host)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer conn.Close()
+
+	// One request at a time: the poller and web requests share the socket,
+	// and a reply must reach the read that asked for it.
+	var memMu sync.Mutex
+	readMemory := func(addr uint32, n int) ([]byte, error) {
+		memMu.Lock()
+		defer memMu.Unlock()
+		return retroarch.ReadMemory(conn, addr, n)
+	}
+
+	dash := dashboard.New(prof, readMemory)
+
+	if *printOnce {
+		printParty(dash.Snapshot())
+		return
+	}
+
+	if *dbPath != "" {
+		store, err := tracker.Open(*dbPath)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer store.Close()
+		dash.EnableTracking(store)
+		log.Printf("logging events to %s", *dbPath)
+	}
+
+	all, err := profile.All()
+	if err != nil {
+		log.Fatal(err)
+	}
+	if emulator.Supported("/proc") {
+		dash.EnableDetection(func() (*emulator.Running, error) { return emulator.Detect("/proc") }, all)
+		log.Printf("following whichever game is running")
+	} else {
+		log.Printf("can't see processes here; using the %s profile", prof.Name)
+	}
+
+	if _, err := os.Stat(*romsDir); err == nil {
+		watcher := saves.NewWatcher(saves.RetroPieSources(*romsDir, *drasticSaves), saves.NewBackups(*backupDir))
+		go watcher.Run(10 * time.Second)
+		dash.EnableSaves(watcher, all)
+		dash.EnableHashCache("rom-hashes.json")
+		log.Printf("backing up saves from %s to %s", *romsDir, *backupDir)
+	} else {
+		log.Printf("save backups off: %v", err)
+	}
+
+	go dash.Poll(*interval)
+
+	log.Printf("dashboard on http://localhost%s (RetroArch at %s)", *listen, *host)
+	log.Fatal(http.ListenAndServe(*listen, dash.Handler()))
+}
+
+func printParty(st dashboard.State) {
+	if !st.Connected {
+		log.Fatal(st.Error)
+	}
+
+	fmt.Printf("%s party\n\n", st.Game)
+	for i, m := range st.Party {
+		if m == nil {
+			fmt.Printf("Slot %d: (empty)\n", i+1)
+			continue
+		}
+		printMember(i+1, m)
+	}
+}
+
+func printMember(slot int, m *dashboard.Member) {
+	egg := ""
+	if m.IsEgg {
+		egg = " [egg]"
+	}
+	fmt.Printf("Slot %d: %s (%s, #%d) Lv %d%s\n", slot, m.Nickname, m.SpeciesName, m.Species, m.Level, egg)
+	fmt.Printf("  OT %s  Nature %s  Ability slot %d  Item %s  Friendship %d  Exp %d\n",
+		m.OTName, m.Nature, m.AbilitySlot, m.ItemName, m.Friendship, m.Experience)
+	fmt.Printf("  HP %d/%d\n", m.CurrentHP, m.Stats.HP)
+	fmt.Printf("  %-6s %4s %4s %4s %4s %4s %4s\n", "", "HP", "Atk", "Def", "SpA", "SpD", "Spe")
+	printStats("Stats", m.Stats)
+	printStats("IVs", m.IVs)
+	printStats("EVs", m.EVs)
+	fmt.Print("  Moves:")
+	for i, mv := range m.Moves {
+		fmt.Printf("  %s (%d PP)", m.MoveNames[i], mv.PP)
+	}
+	fmt.Println()
+	fmt.Println()
+}
+
+func printStats(label string, s gen3.Stats) {
+	fmt.Printf("  %-6s %4d %4d %4d %4d %4d %4d\n", label, s.HP, s.Attack, s.Defense, s.SpAtk, s.SpDef, s.Speed)
+}

@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Trainers</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <div class="brand"><h1 id="title">Trainers</h1><nav><a href="/">Party</a><a href="box.html">Boxes</a><a href="trainers.html" class="on">Trainers</a><a href="saves.html">Saves</a><a href="library.html">Library</a></nav></div>
+  <div id="status"></div>
+</header>
+<div id="error"></div>
+<div class="toolbar">
+  <input id="search" type="search" placeholder="Search trainers, areas or Pokémon" autocomplete="off" aria-label="Search trainers">
+  <label class="toggle"><input type="checkbox" id="rematches"> Show rematches</label>
+</div>
+<div id="trainers" class="trainer-list"></div>
+
+<script src="species.js"></script>
+<script>
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+const params = new URLSearchParams(location.search);
+let data = null;
+
+// A trainer's search text: who they are, where, and what they use.
+const haystack = (t) => [t.class, t.name, ...(t.areas || []), ...t.party.map((m) => m.speciesName)].join(" ").toLowerCase();
+
+function monHTML(m) {
+  const sprite = data.sprites[m.species];
+  const details = [m.item ? `@ ${esc(m.item)}` : "", (m.moves || []).map(esc).join(", ")].filter(Boolean).join(" · ");
+  return `<div class="tmon clickable" data-open-species="${m.species}" title="Species info">
+    ${sprite ? `<img src="${sprite}" alt="" loading="lazy">` : ""}
+    <div class="info"><div class="n">${esc(m.speciesName)} <span class="lv">Lv ${m.level}</span></div>
+    ${details ? `<div class="d">${details}</div>` : ""}</div></div>`;
+}
+
+function trainerHTML(t) {
+  const items = (t.items || []).length ? `<span class="sub">Uses ${t.items.map(esc).join(", ")}</span>` : "";
+  return `<article class="card trainer">
+    <div class="top"><div><span class="name">${esc(t.class)} ${esc(t.name)}</span>${t.double ? ` <span class="pill">double</span>` : ""}</div>
+    <span class="sub">#${t.id}</span></div>
+    ${items}
+    <div class="tmons">${t.party.map(monHTML).join("")}</div>
+  </article>`;
+}
+
+// Rematches and alternate teams share a class and name with an earlier
+// trainer; by default only the first is listed.
+function firstOfEach(list) {
+  const seen = new Set();
+  return list.filter((t) => {
+    const k = `${t.class}|${t.name}|${(t.areas || []).join()}`;
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
+}
+
+function render() {
+  const q = document.getElementById("search").value.trim().toLowerCase();
+  let list = data.trainers;
+  if (!document.getElementById("rematches").checked && !q) list = firstOfEach(list);
+  if (q) list = list.filter((t) => haystack(t).includes(q));
+  const el = document.getElementById("trainers");
+  if (!list.length) {
+    el.innerHTML = `<div class="card empty">No trainers match “${esc(q)}”.</div>`;
+    return;
+  }
+  if (!data.placed) {
+    el.innerHTML = `<p class="sub note">This game's trainers aren't matched to places yet, so they're listed in the game's own order.</p>` +
+      list.map(trainerHTML).join("");
+    return;
+  }
+  // Group by area, in the order areas first appear; unplaced trainers last.
+  const groups = new Map();
+  for (const t of list) {
+    const area = (t.areas || [])[0] || "Elsewhere (battle facilities, scripted fights)";
+    if (!groups.has(area)) groups.set(area, []);
+    groups.get(area).push(t);
+  }
+  const rank = (a) => data.areaOrder?.[a] ?? Infinity;
+  const order = [...groups.keys()].sort((a, b) => rank(a) - rank(b));
+  el.innerHTML = order.map((a) => `<section><h2 class="area">${esc(a)} <span class="sub">${groups.get(a).length}</span></h2>
+    ${groups.get(a).map(trainerHTML).join("")}</section>`).join("");
+}
+
+async function load() {
+  const rom = params.get("rom") || "";
+  const res = await fetch(`/api/trainers${rom ? `?rom=${encodeURIComponent(rom)}` : ""}`);
+  if (!res.ok) {
+    document.getElementById("error").textContent = await res.text();
+    return;
+  }
+  data = await res.json();
+  document.getElementById("title").textContent = `${data.game || "Game"} trainers`;
+  document.title = `${data.game || "Game"} trainers`;
+  document.getElementById("status").textContent = `${data.trainers.length} battles`;
+  render();
+}
+
+document.getElementById("search").addEventListener("input", render);
+document.getElementById("rematches").addEventListener("change", render);
+document.addEventListener("click", (e) => {
+  const t = e.target.closest("[data-open-species]");
+  if (t && data) openSpecies(data.rom, Number(t.dataset.openSpecies));
+});
+load();
+</script>
+</body>
+</html>

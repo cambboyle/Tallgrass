@@ -1,0 +1,17 @@
+[Unit]
+Description=Tallgrass dashboard
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=pi
+WorkingDirectory=/home/pi/tallgrass
+ExecStart=/home/pi/tallgrass/tallgrass -host 127.0.0.1:55355 -listen :8080
+Restart=always
+RestartSec=5
+# Give the emulator priority over us for CPU and disk.
+Nice=10
+IOSchedulingClass=idle
+
+[Install]
+WantedBy=multi-user.target

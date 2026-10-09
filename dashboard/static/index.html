@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Party</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <div class="brand"><h1 id="game">Party</h1><nav><a href="/" class="on">Party</a><a href="box.html">Boxes</a><a href="trainers.html">Trainers</a><a href="saves.html">Saves</a><a href="library.html">Library</a></nav></div>
+  <div id="status">connecting…</div>
+</header>
+<div id="error"></div>
+<div id="notice"></div>
+<main id="party"></main>
+<section id="route"></section>
+<section id="run"></section>
+
+<script src="species.js"></script>
+<script>
+const STATS = [["hp", "HP"], ["attack", "Atk"], ["defense", "Def"], ["spAtk", "SpA"], ["spDef", "SpD"], ["speed", "Spe"]];
+
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+
+function hpColor(frac) {
+  if (frac > 0.5) return "var(--good)";
+  if (frac > 0.2) return "var(--warn)";
+  return "var(--bad)";
+}
+
+let deadSet = new Set(); // personalities that have fainted this run
+
+// partyHTML renders the party, folding runs of empty slots into one line.
+function partyHTML(party) {
+  const out = [];
+  for (let i = 0; i < party.length; i++) {
+    if (party[i]) { out.push(card(party[i], i + 1)); continue; }
+    let j = i;
+    while (j + 1 < party.length && !party[j + 1]) j++;
+    out.push(`<div class="card empty">${i === j ? `Slot ${i + 1}` : `Slots ${i + 1}–${j + 1}`} · empty</div>`);
+    i = j;
+  }
+  return out.join("");
+}
+
+function card(p, slot) {
+  if (!p) return `<div class="card empty">Slot ${slot} · empty</div>`;
+  const dead = deadSet.has(p.personality);
+
+  const frac = p.stats.hp ? p.currentHp / p.stats.hp : 0;
+  const fainted = p.currentHp === 0 && !p.isEgg;
+  const badge = fainted ? "FNT" : p.condition;
+
+  const head = STATS.map(([k, label]) => {
+    const cls = k === p.natureUp ? "up" : k === p.natureDown ? "down" : "";
+    const arrow = cls === "up" ? "↑" : cls === "down" ? "↓" : "";
+    return `<th class="${cls}">${label}${arrow}</th>`;
+  }).join("");
+  const row = (label, vals, max) =>
+    `<tr><td>${label}</td>${STATS.map(([k]) =>
+      `<td class="${max && vals[k] === max ? "max" : ""}">${vals[k]}</td>`).join("")}</tr>`;
+
+  const moves = p.moves.map((m, i) =>
+    `<div class="move"><span>${esc(p.moveNames[i] || `#${m.id}`)}</span><span>${m.pp} PP</span></div>`).join("");
+  const species = p.speciesName || `#${p.species}`;
+  const item = p.heldItem ? p.itemName || `#${p.heldItem}` : "none";
+
+  return `<div class="card${fainted ? " fainted" : ""}">
+    <div class="head">
+      ${p.sprite ? `<img class="sprite clickable" src="${p.sprite}" alt="" data-open-species="${p.species}" title="Species info">` : ""}
+      <div>
+        <div class="top">
+          <div><span class="name clickable" data-open-species="${p.species}" title="Species info">${esc(p.nickname)}</span>${p.isShiny ? `<span class="shiny" title="Shiny">★</span>` : ""}${badge ? `<span class="badge">${badge}</span>` : ""}${dead ? `<span class="badge dead" title="Fainted during this run">Dead</span>` : ""}</div>
+          <div class="lv">Lv ${p.level}</div>
+        </div>
+        <div class="sub">${p.isEgg ? "Egg" : esc(species)} · ${p.nature}</div>
+      </div>
+    </div>
+    <div class="hp">
+      <div class="bar"><div style="width:${(frac * 100).toFixed(1)}%;background:${hpColor(frac)}"></div></div>
+      <div class="hptext">${p.currentHp} / ${p.stats.hp}</div>
+    </div>
+    <table>
+      <thead><tr><th></th>${head}</tr></thead>
+      <tbody>${row("Stat", p.stats)}${row("IV", p.ivs, 31)}${row("EV", p.evs, 252)}</tbody>
+    </table>
+    <div class="moves">${moves}</div>
+    <div class="meta">
+      <span>Item ${esc(item)}</span>
+      <span>Ability ${esc(p.abilityName || p.abilitySlot + 1)}</span>
+      <span>Friendship ${p.friendship}</span>
+      <span>OT ${esc(p.otName)}</span>
+    </div>
+  </div>`;
+}
+
+let chosenPeriod = null; // period tab picked by the user, or null for the current one
+let lastMap = "";
+let lastState = null;
+
+const hourLabel = (h) => `${String(h).padStart(2, "0")}:00`;
+
+// What's on the current map besides wild Pokémon: items, shops and
+// trainers, fetched once per map (Gen 3 games whose maps we can read).
+const mapExtras = new Map();
+function mapExtrasHTML(loc) {
+  const rom = lastState?.running?.sha1?.slice(0, 12);
+  if (!rom) return "";
+  const key = `${rom}|${loc.mapGroup}.${loc.mapNum}`;
+  if (!mapExtras.has(key)) {
+    mapExtras.set(key, null);
+    fetch(`/api/map?rom=${rom}&map=${loc.mapGroup}.${loc.mapNum}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((v) => { mapExtras.set(key, v); if (lastState) render(lastState); });
+    return "";
+  }
+  const v = mapExtras.get(key);
+  if (!v) return "";
+  const parts = [];
+  if (v.items?.length) {
+    const items = v.items.map((i) => `<li>${esc(i.item)}${i.quantity ? ` ×${i.quantity}` : ""}${i.hidden ? ` <span class="pill" title="Hidden: use the Itemfinder or check the spot">hidden</span>` : ""}</li>`).join("");
+    parts.push(`<div class="method"><h3>Items</h3><ul class="map-items">${items}</ul></div>`);
+  }
+  for (const shop of v.shops || []) {
+    parts.push(`<div class="method"><h3>Shop</h3><ul class="map-items">${shop.map((i) => `<li>${esc(i)}</li>`).join("")}</ul></div>`);
+  }
+  if (v.trainerList?.length) {
+    const rows = v.trainerList.map((t) => `<div class="rt"><b>${esc(t.class)} ${esc(t.name)}</b>${t.double ? ` <span class="pill">double</span>` : ""}
+      ${t.party.map((m) => `<span class="clickable" data-open-species="${m.species}" title="${esc(m.speciesName)} Lv ${m.level}">${v.sprites[m.species] ? `<img src="${v.sprites[m.species]}" alt="">` : esc(m.speciesName)}</span>`).join("")}
+      <span class="sub">Lv ${Math.max(...t.party.map((m) => m.level))}</span></div>`).join("");
+    parts.push(`<div class="method"><h3>Trainers · <a href="trainers.html?rom=${rom}">all</a></h3><div class="route-trainers">${rows}</div></div>`);
+  }
+  return parts.length ? `<div class="map-extras">${parts.join("")}</div>` : "";
+}
+
+function routeHTML(loc) {
+  if (!loc) return "";
+  const mapKey = `${loc.mapGroup}.${loc.mapNum}`;
+  if (mapKey !== lastMap) { chosenPeriod = null; lastMap = mapKey; }
+
+  const head = (extra) => `<div class="route-head"><h2>${esc(loc.name || "Unknown map")}</h2>${extra}</div>`;
+  if (!loc.periods.length) return head("") + `<div class="empty-route">No wild Pokémon here.</div>` + mapExtrasHTML(loc);
+
+  const period = loc.periods.find((p) => p.name === chosenPeriod) || loc.periods.find((p) => p.active) || loc.periods[0];
+
+  const species = new Map();
+  period.methods.forEach((m) => m.encounters.forEach((e) => species.set(e.species, e.caught)));
+  const caught = [...species.values()].filter(Boolean).length;
+  const clock = loc.hour != null ? ` · ${hourLabel(loc.hour)}` : "";
+  const legend = `<span class="legend"><span class="mark caught">✓</span>caught <span class="mark seen"></span>seen</span>`;
+  const summary = `<div class="sub">${caught}/${species.size} caught${clock}${legend}</div>`;
+
+  const tabs = loc.periods.length < 2 ? "" : `<div class="tabs">${loc.periods.map((p) =>
+    `<button class="${p === period ? "on" : ""}" data-period="${esc(p.name)}">${esc(p.name)}` +
+    `${p.active ? `<span class="now">now</span>` : ""}</button>`).join("")}</div>`;
+
+  const methods = period.methods.map((m) => `<div class="method"><h3>${esc(m.method)}</h3><div class="mons">${
+    m.encounters.map((e) => {
+      const lv = e.minLevel === e.maxLevel ? `Lv ${e.minLevel}` : `Lv ${e.minLevel}–${e.maxLevel}`;
+      const tag = e.caught ? `<span class="mark caught" title="Caught">✓</span>` : e.seen ? `<span class="mark seen" title="Seen"></span>` : "";
+      return `<div class="mon clickable" data-open-species="${e.species}" title="Species info">${e.sprite ? `<img src="${e.sprite}" alt="">` : ""}<div class="info">
+        <div class="n">${esc(e.name || `#${e.species}`)}</div><div class="d">${lv} · ${e.chance}%</div></div>${tag}</div>`;
+    }).join("")}</div></div>`).join("");
+
+  return head(summary) + tabs + methods + mapExtrasHTML(loc);
+}
+
+document.getElementById("run").addEventListener("change", async (e) => {
+  if (e.target.id !== "nuzlocke") return;
+  const res = await fetch("/api/settings/nuzlocke", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ enabled: e.target.checked }),
+  });
+  if (!res.ok) alert(`Couldn't change Nuzlocke mode: ${await res.text()}`);
+});
+
+document.getElementById("route").addEventListener("click", (e) => {
+  const btn = e.target.closest("button[data-period]");
+  if (!btn) return;
+  chosenPeriod = btn.dataset.period;
+  if (lastState) render(lastState);
+});
+
+function timeLabel(iso) {
+  const d = new Date(iso);
+  const sameDay = d.toDateString() === new Date().toDateString();
+  return sameDay ? d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+                 : d.toLocaleDateString([], { month: "short", day: "numeric" });
+}
+
+function runHTML(run) {
+  if (!run) return "";
+  const started = new Date(run.startedAt).toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" });
+  const toggle = `<label class="switch" title="Nuzlocke mode: the first faint counts as a death">
+    <input type="checkbox" id="nuzlocke" ${run.nuzlocke ? "checked" : ""}> Nuzlocke mode</label>`;
+  const summary = run.nuzlocke ? `${run.alive} alive · ${run.dead} dead` : `${run.alive + run.dead} caught`;
+  const head = `<div class="route-head"><h2>${run.nuzlocke ? "Nuzlocke" : "Journey"} · ${esc(run.player)}</h2>
+    <div class="sub">${summary} · since ${started} ${toggle}</div></div>`;
+
+  const areas = run.areas.map((a) => `<li><span class="k">${esc(a.name)}</span>${a.catches.length
+      ? `<span class="v">${a.catches.map(esc).join(", ")}</span>` : `<span class="v none">—</span>`}</li>`).join("");
+  const events = run.events.map((e) =>
+    `<li class="ev-${e.kind}"><time title="${esc(new Date(e.at).toLocaleString())}">${timeLabel(e.at)}</time><span class="v">${esc(e.text)}</span></li>`).join("");
+
+  return head + `<div class="run-grid">
+    <div class="panel"><h3>${run.nuzlocke ? "Routes" : "Catches by area"}</h3><ul class="rows">${areas || `<li class="none">Nothing yet</li>`}</ul></div>
+    <div class="panel"><h3>Log</h3><ul class="rows log">${events}</ul></div>
+  </div>`;
+}
+
+// noticeHTML explains why there's no live data for a running game.
+function noticeHTML(state) {
+  const r = state.running;
+  if (!r) {
+    return state.connected ? "" : `<div class="card notice">Start a game and it will show up here. Old saves are on the <a href="saves.html">Saves</a> tab.</div>`;
+  }
+  if (r.live) return "";
+  const backed = `Your saves are still backed up: see the <a href="saves.html">Saves</a> tab.`;
+  if (r.emulator === "drastic" && r.supported) {
+    return `<div class="card notice">Can't read <strong>${esc(r.file)}</strong> live in this version of DraStic. ${backed}</div>`;
+  }
+  if (r.emulator === "drastic") {
+    return `<div class="card notice"><strong>${esc(r.file)}</strong> is running in DraStic, but it isn't a game we can read yet. ${backed}</div>`;
+  }
+  return `<div class="card notice"><strong>${esc(r.file)}</strong> doesn't have a game profile yet, so there's no live data for it. ${backed}
+    <div class="sub">ROM SHA-1 <code>${esc(r.sha1)}</code></div></div>`;
+}
+
+function render(state) {
+  lastState = state;
+  deadSet = new Set(state.run?.nuzlocke ? state.run.mons.filter((m) => m.faintedAt).map((m) => m.personality) : []);
+  const r = state.running;
+  document.getElementById("game").textContent = state.game || "No game running";
+  document.title = state.game || "Tallgrass";
+  document.getElementById("error").textContent = state.error || "";
+  document.getElementById("notice").innerHTML = noticeHTML(state);
+  const status = document.getElementById("status");
+  status.className = state.connected ? "live" : r ? "" : "down";
+  status.textContent = state.connected ? "live" : r ? (r.emulator === "drastic" ? "DS" : "not supported yet") : "no game";
+  document.getElementById("party").innerHTML = state.connected ? partyHTML(state.party) : "";
+  document.getElementById("route").innerHTML = state.connected ? routeHTML(state.location) : "";
+  document.getElementById("run").innerHTML = runHTML(state.run);
+}
+
+// Tapping a Pokémon opens its species page for the game being played.
+document.addEventListener("click", (e) => {
+  const t = e.target.closest("[data-open-species]");
+  const rom = lastState?.running?.sha1?.slice(0, 12);
+  if (t && rom) openSpecies(rom, Number(t.dataset.openSpecies));
+});
+
+// EventSource reconnects on its own if the server restarts.
+const events = new EventSource("/api/events");
+events.onmessage = (e) => render(JSON.parse(e.data));
+events.onerror = () => {
+  const status = document.getElementById("status");
+  status.className = "down";
+  status.textContent = "server offline";
+};
+</script>
+</body>
+</html>

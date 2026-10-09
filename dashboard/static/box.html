@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Save viewer</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <div class="brand"><h1 id="title">Boxes</h1><nav><a href="/">Party</a><a href="box.html" id="nav-boxes">Boxes</a><a href="trainers.html">Trainers</a><a href="saves.html" id="nav-saves">Saves</a><a href="library.html">Library</a></nav></div>
+</header>
+<div id="error"></div>
+<div id="view"></div>
+
+<script src="species.js"></script>
+<script>
+const params = new URLSearchParams(location.search);
+const file = params.get("file") || "";
+const version = params.get("version") || "";
+const live = !file; // no file: read the running game's RAM
+document.getElementById(live ? "nav-boxes" : "nav-saves").className = "on";
+if (!live) document.getElementById("title").textContent = "Save viewer";
+let save = null;
+let boxIndex = 0;
+let selected = null; // the SaveMon shown in the detail panel
+
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+const STATS = [["hp", "HP"], ["attack", "Atk"], ["defense", "Def"], ["spAtk", "SpA"], ["spDef", "SpD"], ["speed", "Spe"]];
+
+function slotHTML(m, key) {
+  if (!m) return `<div class="slot empty"></div>`;
+  const on = selected === m ? " on" : "";
+  return `<button class="slot${on}" data-key="${key}" title="${esc(m.nickname)} · Lv ${m.level}">
+    ${m.sprite ? `<img src="${m.sprite}" alt="">` : `<span class="no-sprite">${esc(m.speciesName || "?")}</span>`}${m.isShiny ? `<span class="shiny">★</span>` : ""}<span class="slot-lv">${m.isEgg ? "Egg" : m.level}</span></button>`;
+}
+
+function detailHTML(m) {
+  if (!m) return `<div class="panel detail empty-detail">Pick a Pokémon to see its details.</div>`;
+  const head = STATS.map(([k, l]) => `<th class="${k === m.natureUp ? "up" : k === m.natureDown ? "down" : ""}">${l}</th>`).join("");
+  const row = (label, vals, max) => `<tr><td>${label}</td>${STATS.map(([k]) =>
+    `<td class="${max && vals[k] === max ? "max" : ""}">${vals[k]}</td>`).join("")}</tr>`;
+  const moves = m.moves.map((mv, i) => `<div class="move"><span>${esc(m.moveNames[i] || `#${mv.id}`)}</span>${m.boxed ? "" : `<span>${mv.pp} PP</span>`}</div>`).join("");
+  return `<div class="panel detail">
+    <div class="head">${m.sprite ? `<img class="sprite" src="${m.sprite}" alt="">` : ""}<div>
+      <div class="top"><div><span class="name">${esc(m.nickname)}</span>${m.isShiny ? `<span class="shiny">★</span>` : ""}</div>
+        <div class="lv">${m.isEgg ? "Egg" : `Lv ${m.level}`}</div></div>
+      ${save.rom && !m.isEgg ? `<button class="btn more" data-info="${m.species}">Species info</button>` : ""}
+      <div class="sub">${esc(m.speciesName)} · ${m.nature}</div></div></div>
+    <table><thead><tr><th></th>${head}</tr></thead><tbody>${m.stats.hp ? row("Stat", m.stats) : ""}${row("IV", m.ivs, 31)}${row("EV", m.evs, 252)}</tbody></table>
+    <div class="moves">${moves}</div>
+    <div class="meta"><span>Item ${esc(m.itemName || "none")}</span><span>Ability ${esc(m.abilityName || m.abilitySlot + 1)}</span>
+      <span>Met ${esc(m.metArea || "?")}${m.metLevel ? ` at Lv ${m.metLevel}` : " (hatched)"}</span><span>OT ${esc(m.otName)}</span></div>
+  </div>`;
+}
+
+function render() {
+  const v = save;
+  const when = v.version === "latest-save" ? "from your last in-game save" : live ? "live from the game" : version ? new Date(version.slice(0, 4) + "-" + version.slice(4, 6) + "-" + version.slice(6, 8) + "T" +
+    version.slice(9, 11) + ":" + version.slice(11, 13) + ":" + version.slice(13, 15) + "Z").toLocaleString([], { dateStyle: "medium", timeStyle: "short" }) : "current file";
+  const box = v.boxes[boxIndex];
+  const count = (b) => b.mons.filter(Boolean).length;
+
+  const tabs = v.boxes.map((b, i) => `<option value="${i}" ${i === boxIndex ? "selected" : ""}>${esc(b.name || `Box ${i + 1}`)} (${count(b)})</option>`).join("");
+  const dex = v.pokedex ? `<div class="panel"><h3>Pokédex · ${v.pokedex.caught} caught · ${v.pokedex.seen} seen</h3>
+    <div class="dex">${v.pokedex.list.map((e) => `<div class="dex-entry" title="#${e.national} ${esc(e.name)}">
+      ${e.sprite ? `<img src="${e.sprite}" alt="">` : ""}<span>#${e.national}</span></div>`).join("")}</div></div>` : "";
+
+  document.getElementById("view").innerHTML = `
+    <section class="viewer">
+      <div class="route-head"><h2>${esc(v.trainer.name)} · ID ${String(v.trainer.id & 0xFFFF).padStart(5, "0")}</h2>
+        <div class="sub">${esc(v.game)}${live ? "" : ` · save #${v.counter}`} · ${esc(when)} · <a href="saves.html">${live ? "save backups" : "all versions"}</a></div></div>
+
+      <div class="panel"><h3>Party</h3><div class="slots party-slots">${v.party.map((m, i) => slotHTML(m, `p${i}`)).join("") || `<span class="none">Empty</span>`}</div></div>
+
+      <div class="viewer-grid">
+        <div class="panel">
+          <div class="box-head"><button class="btn" data-step="-1" aria-label="Previous box">‹</button>
+            <select id="box">${tabs}</select><button class="btn" data-step="1" aria-label="Next box">›</button></div>
+          <div class="slots box-slots">${box.mons.map((m, i) => slotHTML(m, `b${i}`)).join("")}</div>
+          ${v.hiddenBoxes ? `<div class="sub hidden-note">${v.hiddenBoxes} more boxes in this game aren't readable yet.</div>` : ""}
+        </div>
+        ${detailHTML(selected)}
+      </div>
+      ${dex}
+    </section>`;
+}
+
+document.getElementById("view").addEventListener("click", (e) => {
+  const info = e.target.closest("[data-info]");
+  if (info) { openSpecies(save.rom, Number(info.dataset.info)); return; }
+  const step = e.target.closest("[data-step]");
+  if (step) {
+    boxIndex = (boxIndex + Number(step.dataset.step) + save.boxes.length) % save.boxes.length;
+    render();
+    return;
+  }
+  const slot = e.target.closest("[data-key]");
+  if (!slot) return;
+  const k = slot.dataset.key;
+  selected = k[0] === "p" ? save.party[+k.slice(1)] : save.boxes[boxIndex].mons[+k.slice(1)];
+  render();
+});
+document.getElementById("view").addEventListener("change", (e) => {
+  if (e.target.id === "box") { boxIndex = +e.target.value; render(); }
+});
+
+// keyOf identifies a Pokémon across refreshes.
+const keyOf = (m) => m && `${m.personality}-${m.otId}`;
+
+async function load(first) {
+  const url = live ? "/api/boxes"
+    : `/api/saves/view?file=${encodeURIComponent(file)}&version=${encodeURIComponent(version)}`;
+  const res = await fetch(url);
+  if (!res.ok) {
+    const msg = await res.text();
+    document.getElementById("error").textContent = live && res.status === 503
+      ? "No game is running. Old saves can be viewed from the Saves tab." : `Couldn't read this save: ${msg}`;
+    if (live) document.getElementById("view").innerHTML = "";
+    save = null;
+    return;
+  }
+  document.getElementById("error").textContent = "";
+  const prev = keyOf(selected);
+  save = await res.json();
+  document.title = `${live ? "Boxes" : "Save"} · ${save.trainer.name}`;
+  if (first) boxIndex = Math.min(save.currentBox, save.boxes.length - 1);
+  const all = [...save.party, ...save.boxes.flatMap((b) => b.mons)].filter(Boolean);
+  selected = all.find((m) => keyOf(m) === prev) || (first ? save.party[0] || null : null);
+  render();
+}
+
+load(true);
+// Live boxes refresh while open; a 33 KB read every 15 s is nothing for the Pi.
+if (live) setInterval(() => { if (!document.hidden) load(false); }, 15000);
+</script>
+</body>
+</html>

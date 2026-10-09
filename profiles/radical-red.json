@@ -1,0 +1,101 @@
+{
+  "name": "Pokémon Radical Red",
+  "generation": 3,
+  "romSha1": [
+    "964f951a0fdaf209e4ea1344883ef0d557bb3a80"
+  ],
+  "verified": [
+    "rom",
+    "save",
+    "live"
+  ],
+  "partyAddress": "0x02024284",
+  "partySlots": 6,
+  "pokemonSize": 100,
+  "encryptedData": false,
+  "moveNames": "0x090F3188",
+  "trainer": {
+    "name": "[0x0300500C]",
+    "id": "[0x0300500C]+0xA"
+  },
+  "location": {
+    "mapId": "[0x03005008]+0x4",
+    "mapSection": "0x02036E10",
+    "mapNames": "[0x080C0C94]",
+    "firstMapSection": 88,
+    "mapGroups": "[0x0805524C]"
+  },
+  "wildEncounters": {
+    "headers": "[0x08082990]",
+    "clockHour": "0x03005EA6",
+    "periods": [
+      {
+        "name": "Day",
+        "headers": "0x09166AB8",
+        "fromHour": 4,
+        "toHour": 17
+      },
+      {
+        "name": "Evening & night",
+        "headers": "0x09166428",
+        "fromHour": 17,
+        "toHour": 4
+      }
+    ]
+  },
+  "pokedex": {
+    "caught": "0x020258E0",
+    "seen": "0x0202583C",
+    "flagBytes": 164,
+    "speciesToNational": "[0x080432B0]"
+  },
+  "saveFile": {
+    "sectorDataSize": "0xFF0",
+    "verifyChecksums": false,
+    "boxMonSize": 58,
+    "boxes": 19,
+    "totalBoxes": 25,
+    "boxNames": "0x8344",
+    "dexSeen": {
+      "block": 1,
+      "offset": "0x310"
+    },
+    "dexCaught": {
+      "block": 1,
+      "offset": "0x3B4"
+    },
+    "ram": {
+      "saveBlock1": "[0x03005008]",
+      "saveBlock2": "[0x0300500C]",
+      "storage": "[0x03005010]"
+    }
+  },
+  "experience": {
+    "baseStats": "[0x080001BC]",
+    "table": "[0x0802FFB8]",
+    "rowLength": 256
+  },
+  "speciesData": {
+    "typeNames": "[0x080D8510]",
+    "abilityNames": "[0x080001C0]",
+    "abilityNameLength": 17,
+    "hiddenAbility": true,
+    "learnsets": "[0x0803EA7C]",
+    "cfruLearnsets": true,
+    "evolutions": "[0x08042F6C]",
+    "evolutionsPerSpecies": 16,
+    "evolutionScheme": "radical-red",
+    "tmMoves": "[0x08125A8C]",
+    "tmLearnsets": "[0x08043C68]",
+    "tutorMoves": "[0x08120BE4]",
+    "tutorLearnsets": "[0x08120C30]",
+    "eggMoves": "[0x08045C50]",
+    "tmLearnsetSize": 16,
+    "tutorLearnsetSize": 16
+  },
+  "trainers": {
+    "table": "[0x08044028]",
+    "classNames": "[0x080D80A0]",
+    "classNameLength": 13
+  }
+}
