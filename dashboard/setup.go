@@ -70,6 +70,8 @@ type SetupCheck struct {
 	Detail   string `json:"detail"`
 	Fix      string `json:"fix,omitempty"` // action for POST /api/setup/fix
 	FixLabel string `json:"fixLabel,omitempty"`
+	Link     string `json:"link,omitempty"` // a page that does this step
+	LinkText string `json:"linkText,omitempty"`
 }
 
 type SetupView struct {
@@ -141,10 +143,19 @@ func (s *Server) setupChecks(g *setupGame) (checks []SetupCheck, done bool, romD
 	checks = append(checks, s.setupSave(g, rom))
 	live := s.setupLive(g, rom)
 	checks = append(checks, live)
+	if s.auth != nil {
+		pin := SetupCheck{ID: "pin", Title: "Lock the dashboard with a PIN (optional)", Link: "account.html#pin-card"}
+		if s.auth.pinSet() {
+			pin.Status, pin.Detail = "ok", "Set. Anyone on your network needs it to use the dashboard."
+		} else {
+			pin.Status, pin.Detail, pin.LinkText = "todo", "Anyone on your network can use this dashboard, including restoring saves.", "Set a PIN"
+		}
+		checks = append(checks, pin)
+	}
 
 	done = live.Status == "ok"
 	for _, c := range checks {
-		if c.ID != "save" && c.Status != "ok" {
+		if c.ID != "save" && c.ID != "pin" && c.Status != "ok" {
 			done = false
 		}
 	}

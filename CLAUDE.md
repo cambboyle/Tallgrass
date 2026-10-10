@@ -185,6 +185,12 @@ Also from ROM, via header pointers: front pics `0x08000128`, normal palettes `0x
 - Config edits keep the original as `<file>.bak-tallgrass` (once) and are refused while a game runs. Flags `-retropie-configs`, `-drastic-dir`.
 - Don't reuse the `.mark` class for new UI: route encounter tiles position it absolutely.
 
+## Dashboard PIN
+
+- `dashboard/auth.go`: optional PIN (4–12 digits) kept as a salted PBKDF2-SHA256 hash in `auth.json` (0600, next to the binary; flag `-auth-file`). Until a PIN is set the dashboard is open. Once set, `protect` wraps every route: pages redirect to `/login.html?next=`, APIs return 401; only the sign-in page, `style.css` and `/api/auth/status|login` stay open.
+- Sessions: random token in an HttpOnly, SameSite=Strict cookie (30 days), stored hashed in `auth.json` so restarts don't sign people out. Changing or removing the PIN needs the current PIN and signs out every other browser. After 5 wrong PINs an address waits 30 s per attempt.
+- Forgotten PIN: delete `/home/pi/tallgrass/auth.json` and restart the service.
+
 ## Cloud (M4)
 
 - **Repo:** `git@github.com:cambboyle/Tallgrass.git` (private). Commit as Cameron Boyle <cambboyle@gmail.com> (repo-local config); **never add Claude attribution** to commits or PRs.

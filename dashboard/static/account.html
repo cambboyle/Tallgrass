@@ -12,7 +12,13 @@
   <div id="status"></div>
 </header>
 <div id="error"></div>
-<main id="account" class="saves"></main>
+<main class="saves">
+  <div id="account"></div>
+  <section class="card" id="pin-card">
+    <h3 class="panel-title">Dashboard PIN</h3>
+    <div id="pin-body"><p class="sub">Loading…</p></div>
+  </section>
+</main>
 
 <script>
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
@@ -74,6 +80,45 @@ document.addEventListener("click", async (e) => {
   }
 });
 load();
+
+// Dashboard PIN: set, change or remove it, and sign out.
+async function loadPIN() {
+  const st = await (await fetch("/api/auth/status")).json();
+  const body = document.getElementById("pin-body");
+  if (!st.enabled) { body.innerHTML = `<p class="sub">PIN protection is off for this Tallgrass.</p>`; return; }
+  body.innerHTML = st.pinSet ? `
+    <p>Anyone on your network needs the PIN to use this dashboard.</p>
+    <form class="pin-form" id="pin-form">
+      <label>Current PIN <input id="pin-current" type="password" inputmode="numeric" autocomplete="current-password" maxlength="12" required></label>
+      <label>New PIN <input id="pin-new" type="password" inputmode="numeric" autocomplete="new-password" maxlength="12" placeholder="leave empty to remove"></label>
+      <div class="row"><button class="btn primary" type="submit">Save</button> <button class="btn" type="button" id="signout">Sign out</button></div>
+    </form>` : `
+    <p>Right now anyone on your network can use this dashboard, including restoring saves. Set a PIN (4 to 12 digits) to lock it.</p>
+    <form class="pin-form" id="pin-form">
+      <label>New PIN <input id="pin-new" type="password" inputmode="numeric" autocomplete="new-password" maxlength="12" required></label>
+      <label>Again <input id="pin-again" type="password" inputmode="numeric" autocomplete="new-password" maxlength="12" required></label>
+      <div class="row"><button class="btn primary" type="submit">Set PIN</button></div>
+    </form>`;
+  body.insertAdjacentHTML("beforeend", `<p class="sub" id="pin-msg" role="alert"></p>`);
+}
+document.addEventListener("submit", async (e) => {
+  if (e.target.id !== "pin-form") return;
+  e.preventDefault();
+  const v = (id) => document.getElementById(id)?.value ?? "";
+  const msg = document.getElementById("pin-msg");
+  if (document.getElementById("pin-again") && v("pin-new") !== v("pin-again")) { msg.textContent = "The two PINs don't match."; return; }
+  const res = await fetch("/api/auth/pin", { method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ pin: v("pin-new"), current: v("pin-current") }) });
+  if (!res.ok) { msg.textContent = await res.text(); return; }
+  await loadPIN();
+  document.getElementById("pin-msg").textContent = v("pin-new") ? "Saved. Other browsers will need the new PIN." : "PIN saved.";
+});
+document.addEventListener("click", async (e) => {
+  if (e.target.id !== "signout") return;
+  await fetch("/api/auth/logout", { method: "POST" });
+  location.href = "/login.html";
+});
+loadPIN();
 </script>
 </body>
 </html>

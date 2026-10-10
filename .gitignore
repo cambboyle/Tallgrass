@@ -31,3 +31,6 @@ supabase/.branches/
 
 # The agent's account key
 cloud-link.json
+
+# The dashboard PIN (hashed) and sign-ins
+auth.json

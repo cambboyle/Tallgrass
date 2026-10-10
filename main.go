@@ -33,6 +33,7 @@ func main() {
 	drasticSaves := flag.String("drastic-saves", "/opt/retropie/configs/nds/drastic/backup", "DraStic's save folder (DS games)")
 	retropieConfigs := flag.String("retropie-configs", "/opt/retropie/configs", "RetroPie's config folder, for the setup wizard")
 	drasticDir := flag.String("drastic-dir", "/opt/retropie/emulators/drastic", "where DraStic is installed, for the setup wizard")
+	authFile := flag.String("auth-file", "auth.json", "where the dashboard PIN (hashed) and sign-ins are kept; delete it to remove a forgotten PIN")
 	cloudURL := flag.String("cloud", cloud.DefaultURL, "Tallgrass backend (empty to turn accounts off)")
 	siteURL := flag.String("site", "https://tallgrass-delta.vercel.app", "Tallgrass website, where pairing codes are entered")
 	linkPath := flag.String("link-file", "cloud-link.json", "where this device's account key is kept")
@@ -115,6 +116,9 @@ func main() {
 	}
 
 	dash.EnableSetup(*retropieConfigs, *drasticDir)
+	if err := dash.EnableAuth(*authFile); err != nil {
+		log.Fatalf("reading %s: %v", *authFile, err)
+	}
 
 	if *cloudURL != "" {
 		dash.EnableCloud(cloud.New(*cloudURL, cloud.DefaultAnonKey), *linkPath, *siteURL)

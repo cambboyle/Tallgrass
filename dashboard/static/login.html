@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sign in · Tallgrass</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <div class="brand"><h1>Tallgrass</h1></div>
+</header>
+<main class="setup">
+  <form class="card stack-sm" id="form">
+    <h2>Enter your PIN</h2>
+    <p class="sub">This dashboard is protected with a PIN.</p>
+    <input id="pin" class="pin-input" type="password" inputmode="numeric" autocomplete="current-password" maxlength="12" autofocus aria-label="PIN" required>
+    <button class="btn primary" type="submit" style="max-width:260px">Sign in</button>
+    <p class="sub" id="msg" role="alert"></p>
+    <p class="sub">Forgot it? On the device running Tallgrass, delete <code>auth.json</code> in the Tallgrass folder and restart it; the dashboard opens without a PIN.</p>
+  </form>
+</main>
+<script>
+const params = new URLSearchParams(location.search);
+const next = params.get("next") || "/";
+const safe = next.startsWith("/") && !next.startsWith("//") && !next.includes("\\") ? next : "/";
+document.getElementById("form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const msg = document.getElementById("msg");
+  msg.textContent = "";
+  const res = await fetch("/api/auth/login", { method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ pin: document.getElementById("pin").value }) });
+  if (res.ok) location.href = safe;
+  else { msg.textContent = await res.text(); document.getElementById("pin").select(); }
+});
+</script>
+</body>
+</html>

@@ -39,6 +39,7 @@ function checksHTML(v) {
       <div class="title">${i + 1}. ${esc(c.title)}</div>
       <div class="sub">${esc(c.detail)}</div>
       ${c.fix ? `<button class="btn primary" data-fix="${esc(c.fix)}">${esc(c.fixLabel || "Fix")}</button>` : ""}
+      ${c.link && c.linkText ? `<a class="btn primary" href="${esc(c.link)}">${esc(c.linkText)}</a>` : ""}
     </div>
   </li>`).join("");
   const done = v.done ? `<section class="card done-card">

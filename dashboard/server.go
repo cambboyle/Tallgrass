@@ -98,6 +98,7 @@ type Server struct {
 	engine *tracker.Engine // nil unless EnableTracking was called
 	store  *tracker.Store  // settings and the run log; nil unless EnableTracking was called
 	setup  *setupState     // the setup wizard; nil when off
+	auth   *authState      // dashboard PIN; nil when off
 	// A Nuzlocke toggle from the web, applied by the poller (the engine's
 	// only user); guarded by mu.
 	pendingNuzlocke *bool
@@ -420,6 +421,10 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/trainers", s.handleTrainers)
 	mux.HandleFunc("GET /api/export", s.handleExport)
 	mux.HandleFunc("GET /api/map", s.handleMap)
+	mux.HandleFunc("GET /api/auth/status", s.handleAuthStatus)
+	mux.HandleFunc("POST /api/auth/login", s.handleLogin)
+	mux.HandleFunc("POST /api/auth/logout", s.handleLogout)
+	mux.HandleFunc("POST /api/auth/pin", s.handleSetPIN)
 	mux.HandleFunc("GET /api/setup", s.handleSetup)
 	mux.HandleFunc("POST /api/setup/game", s.handleSetupGame)
 	mux.HandleFunc("POST /api/setup/fix", s.handleSetupFix)
@@ -428,7 +433,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /api/cloud/unlink", s.handleCloudUnlink)
 	mux.HandleFunc("POST /api/cloud/upload", s.handleCloudUpload)
 	mux.HandleFunc("GET /api/saves/sprite", s.handleROMSprite)
-	return mux
+	return s.protect(mux)
 }
 
 func (s *Server) handleParty(w http.ResponseWriter, r *http.Request) {
