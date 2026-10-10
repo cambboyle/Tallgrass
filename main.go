@@ -21,8 +21,11 @@ import (
 	"tallgrass/tracker"
 )
 
+// version is set at build time (-ldflags "-X main.version=0.1.0").
+var version = "dev"
+
 func main() {
-	host := flag.String("host", "192.168.0.227:55355", "RetroArch network command address")
+	host := flag.String("host", "127.0.0.1:55355", "RetroArch network command address")
 	profilePath := flag.String("profile", "radical-red", "profile to use where the running game can't be detected (not Linux), or a path to a .json profile")
 	listen := flag.String("listen", ":8080", "dashboard address")
 	interval := flag.Duration("interval", time.Second, "how often to read the party")
@@ -37,8 +40,14 @@ func main() {
 	cloudURL := flag.String("cloud", cloud.DefaultURL, "Tallgrass backend (empty to turn accounts off)")
 	siteURL := flag.String("site", "https://tallgrass-delta.vercel.app", "Tallgrass website, where pairing codes are entered")
 	linkPath := flag.String("link-file", "cloud-link.json", "where this device's account key is kept")
+	showVersion := flag.Bool("version", false, "print the version and exit")
+	noUpdates := flag.Bool("no-updates", false, "don't check GitHub for new releases")
 	exportROM := flag.String("export", "", "write a ROM's game data (species, moves, trainers) as JSON to stdout and exit")
 	flag.Parse()
+	if *showVersion {
+		fmt.Println("tallgrass", version)
+		return
+	}
 
 	if *exportROM != "" {
 		all, err := profile.All()
@@ -116,6 +125,9 @@ func main() {
 	}
 
 	dash.EnableSetup(*retropieConfigs, *drasticDir)
+	if !*noUpdates {
+		dash.EnableUpdates(version)
+	}
 	if err := dash.EnableAuth(*authFile); err != nil {
 		log.Fatalf("reading %s: %v", *authFile, err)
 	}

@@ -261,6 +261,15 @@ fetch("/api/setup").then((r) => (r.ok ? r.json() : null)).then((v) => {
   document.getElementById("notice").before(n);
 });
 
+// A newer release: mention it once per page load.
+fetch("/api/update").then((r) => (r.ok ? r.json() : null)).then((u) => {
+  if (!u?.available) return;
+  const n = document.createElement("div");
+  n.className = "card notice setup-nudge";
+  n.innerHTML = `Tallgrass ${esc(u.latest)} is out. <a href="account.html#update-card">Update</a>`;
+  document.getElementById("notice").before(n);
+});
+
 // EventSource reconnects on its own if the server restarts.
 const events = new EventSource("/api/events");
 events.onmessage = (e) => render(JSON.parse(e.data));

@@ -2,17 +2,20 @@ PI      ?= pi@192.168.0.227
 PI_DIR  := /home/pi/tallgrass
 BIN     := tallgrass
 PI_BIN  := build/$(BIN)-linux-armv7
+# Builds made here are development builds: they never offer to update
+# themselves. Releases come from GitHub Actions (tag vX.Y.Z).
+VERSION := dev-$(shell git rev-parse --short HEAD 2>/dev/null || echo local)
 
 .PHONY: run test build-pi deploy install-service logs status
 
 run:
-	go run .
+	go run . -host $(lastword $(subst @, ,$(PI))):55355
 
 test:
 	go test ./...
 
 build-pi:
-	GOOS=linux GOARCH=arm GOARM=7 go build -ldflags="-s -w" -o $(PI_BIN) .
+	GOOS=linux GOARCH=arm GOARM=7 go build -ldflags="-s -w -X main.version=$(VERSION)" -o $(PI_BIN) .
 
 # Copy to a temp name and rename, because Linux won't overwrite a running binary.
 deploy: test build-pi

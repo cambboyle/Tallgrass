@@ -92,3 +92,5 @@ td.num, th.num { text-align: right; font-family: var(--mono); font-variant-numer
 .sort { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; }
 .sort button { font: 500 14px var(--body); padding: 4px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--card); color: var(--ink); cursor: pointer; }
 .sort button.on { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+
+.install { margin: 0; padding: 12px 14px; border-radius: 8px; background: var(--paper); border: 1px solid var(--line); overflow-x: auto; font: 14px var(--mono); }

@@ -32,6 +32,13 @@ export default async function Home() {
         </div>
       </section>
 
+      <section className="card stack" id="install">
+        <h3>Install</h3>
+        <p>On your Raspberry Pi (RetroPie) or Linux PC, with your game already playable:</p>
+        <pre className="install"><code>curl -fsSL https://tallgrass-delta.vercel.app/install.sh | bash</code></pre>
+        <p className="muted small">Then open the address it prints and pick your game; the setup page checks everything and fixes what it can. Tallgrass keeps itself up to date.</p>
+      </section>
+
       <section className="grid">
         <div className="card stack">
           <h3>Live</h3>

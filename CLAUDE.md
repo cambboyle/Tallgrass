@@ -191,6 +191,15 @@ Also from ROM, via header pointers: front pics `0x08000128`, normal palettes `0x
 - Sessions: random token in an HttpOnly, SameSite=Strict cookie (30 days), stored hashed in `auth.json` so restarts don't sign people out. Changing or removing the PIN needs the current PIN and signs out every other browser. After 5 wrong PINs an address waits 30 s per attempt.
 - Forgotten PIN: delete `/home/pi/tallgrass/auth.json` and restart the service.
 
+## Releases and self-update
+
+- `main.version` is set by `-ldflags -X main.version=…`: releases get `X.Y.Z` (from the tag), `make deploy` builds get `dev-<commit>` (never self-update). `tallgrass -version`.
+- `.github/workflows/ci.yml` (vet, test, Pi cross-compile, website lint/build) and `release.yml` (tag `v*` → three Linux builds, `SHA256SUMS`, `SHA256SUMS.sig`, GitHub release). Details in `docs/releasing.md`.
+- `update/`: checks `api.github.com/repos/cambboyle/Tallgrass/releases/latest`; installs only if `SHA256SUMS.sig` verifies with the built-in Ed25519 key and the binary matches its hash, then the process exits and systemd restarts it. Dashboard: Account → Updates, `GET /api/update[?check=1]`, `POST /api/update/apply`; checks every 6 h (`-no-updates` turns it off).
+- The private signing key is `~/.config/tallgrass/release.key` on the Mac and the `RELEASE_SIGNING_KEY` repo secret. Never print it.
+- Installer: `web/public/install.sh` (served at `/install.sh` and attached to releases): detects armv7/arm64/amd64, checks the checksum, installs to `~/tallgrass`, writes the systemd unit. Installs and updates need public releases (the repo is private for now).
+- `-host` now defaults to `127.0.0.1:55355`; `make run` passes the Pi's address.
+
 ## Cloud (M4)
 
 - **Repo:** `git@github.com:cambboyle/Tallgrass.git` (private). Commit as Cameron Boyle <cambboyle@gmail.com> (repo-local config); **never add Claude attribution** to commits or PRs.

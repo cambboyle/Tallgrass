@@ -14,6 +14,10 @@
 <div id="error"></div>
 <main class="saves">
   <div id="account"></div>
+  <section class="card" id="update-card">
+    <h3 class="panel-title">Updates</h3>
+    <div id="update-body"><p class="sub">Loading…</p></div>
+  </section>
   <section class="card" id="pin-card">
     <h3 class="panel-title">Dashboard PIN</h3>
     <div id="pin-body"><p class="sub">Loading…</p></div>
@@ -119,6 +123,39 @@ document.addEventListener("click", async (e) => {
   location.href = "/login.html";
 });
 loadPIN();
+
+// Updates: show the version, check GitHub, install a newer release.
+async function loadUpdate(check) {
+  const res = await fetch("/api/update" + (check ? "?check=1" : ""));
+  const body = document.getElementById("update-body");
+  if (!res.ok) { body.innerHTML = `<p class="sub">Updates are off for this Tallgrass.</p>`; return; }
+  const u = await res.json();
+  const checked = u.checkedAt && !u.checkedAt.startsWith("0001") ? ` · checked ${new Date(u.checkedAt).toLocaleString([], { dateStyle: "medium", timeStyle: "short" })}` : "";
+  let html = `<p>This is Tallgrass <b>${esc(u.current)}</b>${u.current === "dev" ? " (a development build, which doesn't update itself)" : ""}.<span class="sub">${checked}</span></p>`;
+  if (u.available) {
+    html += `<p><b>Tallgrass ${esc(u.latest)} is available.</b> <a href="${esc(u.url)}" target="_blank" rel="noopener">What's new</a></p>
+      <p><button class="btn primary" id="update-apply">Install ${esc(u.latest)}</button></p>
+      <p class="sub">Tallgrass restarts in a few seconds; games keep running.</p>`;
+  } else if (u.error) {
+    html += `<p class="sub">Couldn't check for updates: ${esc(u.error)}</p>`;
+  } else if (u.latest) {
+    html += `<p class="sub">You're on the latest release.</p>`;
+  }
+  html += `<p><button class="btn" id="update-check">Check now</button></p><p class="sub" id="update-msg" role="alert"></p>`;
+  body.innerHTML = html;
+}
+document.addEventListener("click", async (e) => {
+  if (e.target.id === "update-check") { e.target.disabled = true; loadUpdate(true); }
+  if (e.target.id === "update-apply") {
+    e.target.disabled = true;
+    e.target.textContent = "Installing…";
+    const res = await fetch("/api/update/apply", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
+    if (!res.ok) { document.getElementById("update-msg").textContent = await res.text(); e.target.disabled = false; return; }
+    document.getElementById("update-msg").textContent = "Installed. Restarting…";
+    setTimeout(() => location.reload(), 8000);
+  }
+});
+loadUpdate(false);
 </script>
 </body>
 </html>

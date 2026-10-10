@@ -1,0 +1,41 @@
+name: Release
+
+# Push a tag like v0.1.0 to publish a release: builds for the Pi (32- and
+# 64-bit) and Linux PCs, checksums, and a signature the agent checks before
+# updating itself. Needs the RELEASE_SIGNING_KEY secret (see docs/releasing.md).
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - run: go test ./...
+      - name: Build
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          mkdir dist
+          build() { GOOS=linux GOARCH=$1 GOARM=$2 go build -trimpath -ldflags "-s -w -X main.version=$version" -o "dist/tallgrass-linux-$3" .; }
+          build arm 7 armv7
+          build arm64 "" arm64
+          build amd64 "" amd64
+          cp web/public/install.sh deploy/tallgrass.service dist/
+      - name: Checksums and signature
+        env:
+          RELEASE_SIGNING_KEY: ${{ secrets.RELEASE_SIGNING_KEY }}
+        run: |
+          cd dist
+          sha256sum tallgrass-linux-* install.sh tallgrass.service > SHA256SUMS
+          go run ../cmd/sign -key-env RELEASE_SIGNING_KEY SHA256SUMS > SHA256SUMS.sig
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" dist/* --title "Tallgrass ${GITHUB_REF_NAME#v}" --generate-notes

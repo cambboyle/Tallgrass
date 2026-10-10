@@ -95,10 +95,11 @@ type Server struct {
 	mapNames uint32
 	lastPC   time.Time // when the tracker last read the PC
 
-	engine *tracker.Engine // nil unless EnableTracking was called
-	store  *tracker.Store  // settings and the run log; nil unless EnableTracking was called
-	setup  *setupState     // the setup wizard; nil when off
-	auth   *authState      // dashboard PIN; nil when off
+	engine  *tracker.Engine // nil unless EnableTracking was called
+	store   *tracker.Store  // settings and the run log; nil unless EnableTracking was called
+	setup   *setupState     // the setup wizard; nil when off
+	auth    *authState      // dashboard PIN; nil when off
+	updates *updateState    // self-update; nil when off
 	// A Nuzlocke toggle from the web, applied by the poller (the engine's
 	// only user); guarded by mu.
 	pendingNuzlocke *bool
@@ -421,6 +422,8 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/trainers", s.handleTrainers)
 	mux.HandleFunc("GET /api/export", s.handleExport)
 	mux.HandleFunc("GET /api/map", s.handleMap)
+	mux.HandleFunc("GET /api/update", s.handleUpdate)
+	mux.HandleFunc("POST /api/update/apply", s.handleUpdateApply)
 	mux.HandleFunc("GET /api/auth/status", s.handleAuthStatus)
 	mux.HandleFunc("POST /api/auth/login", s.handleLogin)
 	mux.HandleFunc("POST /api/auth/logout", s.handleLogout)
