@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"tallgrass/gen3"
+	"tallgrass/gen4"
 	"tallgrass/profile"
 	"tallgrass/tracker"
 )
@@ -89,6 +90,9 @@ func (s *Server) track(st State, caught []byte) error {
 
 // nationalName finds the species and name for a national dex number.
 func (s *Server) nationalName(national int) (int, string) {
+	if s.dsLive != nil { // the poller's own state, like this callback
+		return national, gen4.Name(s.dsLive.data.Species, national) // Gen 4 species IDs are national numbers
+	}
 	if s.national == nil {
 		return 0, ""
 	}

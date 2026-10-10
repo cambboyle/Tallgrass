@@ -25,6 +25,10 @@ const (
 // nickname prompt.
 const pcCatchDelay = 2 * time.Minute
 
+// maxNewFlags is the most caught flags one poll can plausibly add: a catch,
+// plus an evolution's new species.
+const maxNewFlags = 2
+
 // Observation is one poll of the game, already decoded and named.
 type Observation struct {
 	At         time.Time
@@ -384,9 +388,11 @@ func (e *Engine) observeDex(o Observation) error {
 			return err
 		}
 	}
-	if e.dexBaseline || e.boxesSeen {
+	if e.dexBaseline || e.boxesSeen || len(fresh) > maxNewFlags {
 		// Already-set flags at the start aren't news, and once the PC can be
-		// read, catches sent there are seen directly (observeBoxes).
+		// read, catches sent there are seen directly (observeBoxes). Several
+		// new flags in one poll aren't catches either (there's one catch per
+		// battle): the flags were misread, or read from the wrong place.
 		e.dexBaseline = false
 		return nil
 	}
@@ -413,6 +419,9 @@ func (e *Engine) observeDex(o Observation) error {
 		f := e.pendingDex[n]
 		delete(e.pendingDex, n)
 		species, name := e.speciesName(n)
+		if species != 0 && e.owns(species) {
+			continue // already logged when it joined the party
+		}
 		if name == "" {
 			name = fmt.Sprintf("#%d", n)
 		}
@@ -426,6 +435,16 @@ func (e *Engine) observeDex(o Observation) error {
 		}
 	}
 	return nil
+}
+
+// owns reports whether this run has had a Pokémon of this species.
+func (e *Engine) owns(species int) bool {
+	for _, m := range e.mons {
+		if m.Species == species {
+			return true
+		}
+	}
+	return false
 }
 
 // observeBoxes logs Pokémon that appear in the PC without having been in the

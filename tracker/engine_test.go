@@ -242,6 +242,37 @@ func TestPCCatches(t *testing.T) {
 	}
 }
 
+// Dex flags that don't look like a catch: a batch appearing at once (a
+// misread), or a species the run already owns (seen in the party before its
+// flag was read). Neither is logged; a real PC catch afterwards still is.
+func TestDexFlagMisreads(t *testing.T) {
+	g := &game{t: t, e: newEngine(t, openStore(t, filepath.Join(t.TempDir(), "test.db"))), now: time.Now()}
+	g.obs = Observation{TrainerID: 1, PlayerName: "A", Section: 0x65, Area: "Route 1",
+		Party: []PartyMon{cyndaquil(9, 30)}, DexCaught: []int{155}}
+	g.tick(time.Second)
+	g.obs.Party = append(g.obs.Party, pidgey) // caught Pidgey; its flag isn't read yet
+	g.tick(time.Second)
+	g.tick(time.Second)
+	g.obs.Party = g.obs.Party[:1] // and deposited it
+	g.tick(time.Second)
+	g.kinds = nil
+
+	g.obs.DexCaught = []int{155, 505, 506, 507, 508, 509, 510, 511, 512}
+	g.tick(time.Second)
+	g.obs.DexCaught = append(g.obs.DexCaught, 16)
+	g.tick(time.Second)
+	g.tick(5 * time.Minute)
+	g.expect()
+
+	g.obs.DexCaught = append(g.obs.DexCaught, 19)
+	g.tick(time.Second)
+	g.tick(5 * time.Minute)
+	g.expect(KindCaughtPC)
+	if v := g.e.View(); !strings.Contains(v.Events[0].Text, "Caught Rattata on Route 1") {
+		t.Errorf("event = %+v", v.Events[0])
+	}
+}
+
 // The view must come out the same every time, even when Pokémon and areas
 // were recorded at the same moment (map iteration order is random in Go).
 func TestViewIsStable(t *testing.T) {

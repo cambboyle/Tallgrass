@@ -78,7 +78,8 @@ func (s *Server) dsSnapshot(r *emulator.Running) State {
 			l.misses++
 			if l.misses > 2 {
 				log.Printf("%s's save data moved; looking for it again", st.Game)
-				l.general, l.party, l.locOffset, l.misses, l.dex = 0, nil, -1, 0, nil
+				l.general, l.party, l.locOffset, l.misses = 0, nil, -1, 0
+				l.forgetDex()
 			}
 		}
 	}
@@ -96,7 +97,8 @@ func (s *Server) dsSnapshot(r *emulator.Running) State {
 				l.party = append(l.party, m)
 			}
 		} else if l.misses++; l.misses > 30 {
-			l.general, l.party, l.locOffset, l.dex = 0, nil, -1, nil // the game was probably reset: find the block again
+			l.general, l.party, l.locOffset = 0, nil, -1 // the game was probably reset: find the block again
+			l.forgetDex()
 		}
 	}
 	s.mu.Lock()
@@ -201,9 +203,18 @@ func (s *Server) dsReadDex(l *dsLive) {
 	}
 }
 
+// forgetDex drops the Pokédex's location and flags, which belong to a block
+// that's no longer trusted.
+func (l *dsLive) forgetDex() {
+	l.dex, l.caught, l.seen = nil, nil, nil
+}
+
 func dsObservation(l *dsLive) tracker.Observation {
 	o := tracker.Observation{At: time.Now(), TrainerID: l.trainID, PlayerName: l.trainer, Section: -1}
-	if l.caught != nil {
+	// Dex flags only count when this poll's read of the block succeeded: a
+	// block that's moving or being rewritten gives garbage flags, which
+	// would be logged as catches.
+	if l.caught != nil && l.misses == 0 {
 		o.DexCaught = []int{}
 		for sp := 1; sp < len(l.caught)*8; sp++ {
 			if gen4.Has(l.caught, sp) {
