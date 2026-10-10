@@ -203,7 +203,7 @@ Also from ROM, via header pointers: front pics `0x08000128`, normal palettes `0x
 
 ## Cloud (M4)
 
-- **Repo:** `git@github.com:cambboyle/Tallgrass.git` (**public** since 2026-10-11; no licence file yet, so all rights reserved). `gh` is logged in as cambboyle. Commit as Cameron Boyle <cambboyle@gmail.com> (repo-local config); **never add Claude attribution** to commits or PRs.
+- **Repo:** `git@github.com:cambboyle/Tallgrass.git` (**public** since 2026-10-11; GPL-3.0 `LICENSE`, profiles CC0 `profiles/LICENSE`). `gh` is logged in as cambboyle. Commit as Cameron Boyle <cambboyle@gmail.com> (repo-local config); **never add Claude attribution** to commits or PRs.
 - **Supabase project** `ifjlueqhuyaafjuzltoi` (London). Schema in `supabase/migrations/` (apply with the Supabase MCP `apply_migration`, then keep the file in the repo): `profiles` (auto-created on sign-up; `is_maintainer` set by hand), `devices` (SHA-256 of each device key), `pairing_codes` (server-only), `games` (the three focus games by ROM SHA-1), `game_data` (uploaded exports; files in the public `gamedata` bucket).
 - **Edge Functions** (`supabase/functions/`, all `verify_jwt = false`, callers checked in code): `pair-start` → code + poll secret; `pair-claim` (user session) → creates the device; `pair-poll` → hands the device key over once; `device` (device key) → account info; `gamedata-upload` (device key, maintainers) → stores an export. The MCP deploy takes each function's files plus `_shared/util.ts`.
 - **Agent:** `cloud/` client; dashboard Account page (`/api/cloud*`); device key in `cloud-link.json` (0600, next to the binary). Flags `-cloud`, `-site`, `-link-file`. The anon key is compiled in (public by design).

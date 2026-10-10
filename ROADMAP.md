@@ -143,7 +143,7 @@ Researched 2026-10-09. Prices and policies change; re-check before committing mo
 | Decision | Leaning | When |
 |---|---|---|
 | Product name | Undecided (2026-10-09); shortlist above | Before the website goes public |
-| Licence | Agent GPL-3.0, server AGPL-3.0 or private, profiles CC0 (repo went public 2026-10-11 without a licence: all rights reserved until one is added) | Soon |
+| Licence | **Decided 2026-10-11:** GPL-3.0 for all code (agent, website, functions), CC0 for profiles | Done (v0.1.1) |
 | Cloud hosting | **Decided 2026-10-09: Supabase** (Cam knows it) for database, auth and storage; API and site hosts still open (Railway, Vercel/Cloudflare) | Start of M4 |
 | Bank | Bridge first (M5), then upstream contributions; fork only if upstream won't take it | M5 |
 | Generated docs | Maintainers upload first; opt-in community uploads later | M4 |

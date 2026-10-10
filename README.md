@@ -26,3 +26,9 @@ Then open `http://<your-pi>:8080/setup.html` and pick your game. Tallgrass keeps
 - `go test ./...`, `make deploy` (to the Pi in `Makefile`), `make run` (on a Mac, talking to the Pi).
 - `CLAUDE.md` has the detailed notes on game formats and the codebase; `ROADMAP.md` has the plan.
 - Releases: `docs/releasing.md`. Website: `web/README.md`.
+
+## Licence
+
+- The Tallgrass code (agent, website, server functions) is licensed under the **GNU General Public License v3.0**: see [LICENSE](LICENSE).
+- Game profiles (`profiles/*.json`: memory addresses and table locations) are dedicated to the public domain under **CC0 1.0**: see [profiles/LICENSE](profiles/LICENSE).
+- Tallgrass is a fan project, not affiliated with Nintendo, Game Freak, The Pokémon Company or the authors of the romhacks it supports. It contains no game data; everything it shows is read from the player's own copy of the game.
