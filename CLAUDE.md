@@ -111,6 +111,12 @@ Profiles use `Ref` addresses: `"0x020258E0"` is fixed, `"[0x03005008]+0x4"` mean
 - **Pokédex:** Radical Red patches `GetSetPokedexFlag` (`0x08104AB0`) to fixed RAM: seen `0x0202583C`, caught `0x020258E0`, 164 bytes each, bit = national number − 1. Species → national: u16 table at `[0x080432B0]` (= `0x098218F0`). Regional forms have their own species IDs (Alolan Rattata = 1020) but map to the base national number.
 - **Vanilla FireRed profile:** same code-pointer refs, dex flags at `[0x0300500C]+0x28` / `+0x5C`; **not verified**, as there's no vanilla FireRed ROM on the Pi.
 
+## Unbound time of day (verified from its code, 2026-10-10)
+
+- Hour byte `0x03005EA6` (clock struct `0x03005EA0` + 6, as in Radical Red); Unbound's code loads it directly 47 times.
+- The wild table selector (`0x08A155B0`) tries, in order: night (hour ≥ 20 or < 5, test at `0x089D9120`) → `0x08A7DA74`; morning (5–7, `0x089D9588`) → `0x08A7DC18`; evening (17–19, `0x089D95A0`) → `0x08A7DC04`; else the main table. The evening table is empty (it starts with the `0xFF` end marker), so evenings use the day table: the profile's Morning 5–8 / Day 8–20 / Night 20–5 is exact.
+- `cmd/ramdump` (cross-compile, copy to the Pi, run there) saves EWRAM/IWRAM through RetroArch, or `ramdump ds` DraStic's main RAM, for finding where data lives.
+
 ## Nuzlocke tracking (Phase 5)
 
 - **Runs:** keyed by game + trainer ID + player name, so each save file gets its own log. Trainer name at `[0x0300500C]` (SaveBlock2), trainer ID at `+0xA` (matches party OT IDs). Nothing is recorded until a save is loaded (trainer ID 0 / empty name = title screen).
