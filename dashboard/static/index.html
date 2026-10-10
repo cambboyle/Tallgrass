@@ -122,9 +122,12 @@ function mapExtrasHTML(loc) {
     const items = v.items.map((i) => `<li>${esc(i.item)}${i.quantity ? ` ×${i.quantity}` : ""}${i.hidden ? ` <span class="pill" title="Hidden: use the Itemfinder or check the spot">hidden</span>` : ""}</li>`).join("");
     parts.push(`<div class="method"><h3>Items</h3><ul class="map-items">${items}</ul></div>`);
   }
-  for (const shop of v.shops || []) {
-    parts.push(`<div class="method"><h3>Shop</h3><ul class="map-items">${shop.map((i) => `<li>${esc(i)}</li>`).join("")}</ul></div>`);
-  }
+  (v.shops || []).forEach((shop, n) => {
+    // DS Poké Marts stock more as you earn badges.
+    const badges = v.shopBadges?.[n];
+    const badge = (i) => badges?.[i] ? ` <span class="badge-need">${badges[i]} badge${badges[i] > 1 ? "s" : ""}</span>` : "";
+    parts.push(`<div class="method"><h3>${badges ? "Poké Mart" : "Shop"}</h3><ul class="map-items">${shop.map((it, i) => `<li>${esc(it)}${badge(i)}</li>`).join("")}</ul></div>`);
+  });
   if (v.trainerList?.length) {
     const rows = v.trainerList.map((t) => `<div class="rt"><b>${esc(t.class)} ${esc(t.name)}</b>${t.double ? ` <span class="pill">double</span>` : ""}
       ${t.party.map((m) => `<span class="clickable" data-open-species="${m.species}" title="${esc(m.speciesName)} Lv ${m.level}">${v.sprites[m.species] ? `<img src="${v.sprites[m.species]}" alt="">` : esc(m.speciesName)}</span>`).join("")}

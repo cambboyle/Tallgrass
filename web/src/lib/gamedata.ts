@@ -39,6 +39,7 @@ export type GameMap = {
   warps?: MapLink[];
   items?: { item: string; quantity?: number; hidden?: boolean; x: number; y: number }[];
   shops?: string[][];
+  shopBadges?: (number[] | null)[]; // DS Poké Marts: badges each item needs
   trainers?: number[];
 };
 export type GameData = {

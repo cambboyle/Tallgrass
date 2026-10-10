@@ -12,15 +12,18 @@ import (
 
 // MapView is one map as the Route section and the export show it.
 type MapView struct {
-	ID          string       `json:"id"` // "group.num"
-	Area        string       `json:"area"`
-	Connections []MapLink    `json:"connections,omitempty"` // walking off an edge
-	Warps       []MapLink    `json:"warps,omitempty"`       // doors, stairs, cave entrances
-	Items       []MapItem    `json:"items,omitempty"`
-	Shops       [][]string   `json:"shops,omitempty"` // item names, in the clerk's order
-	Trainers    []int        `json:"trainers,omitempty"`
-	section     int          // region map section, -1 if unknown
-	raw         gen3.MapData // IDs, for the export
+	ID          string     `json:"id"` // "group.num"
+	Area        string     `json:"area"`
+	Connections []MapLink  `json:"connections,omitempty"` // walking off an edge
+	Warps       []MapLink  `json:"warps,omitempty"`       // doors, stairs, cave entrances
+	Items       []MapItem  `json:"items,omitempty"`
+	Shops       [][]string `json:"shops,omitempty"` // item names, in the clerk's order
+	// Per shop, per item: badges needed before the clerk sells it (DS
+	// standard Poké Marts); nil for shops whose stock never changes.
+	ShopBadges [][]int      `json:"shopBadges,omitempty"`
+	Trainers   []int        `json:"trainers,omitempty"`
+	section    int          // region map section, -1 if unknown
+	raw        gen3.MapData // IDs, for the export
 }
 
 type MapLink struct {

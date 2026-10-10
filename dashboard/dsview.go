@@ -226,6 +226,19 @@ func (idx *dsIndexes) placeDS(d *gen4.Data, maps []gen4.MapInfo) {
 			}
 			v.Items = append(v.Items, mi)
 		}
+		badges := false
+		for _, shop := range m.Shops {
+			var names []string
+			for _, it := range shop.Items {
+				names = append(names, gen4.Name(d.Items, it))
+			}
+			v.Shops = append(v.Shops, names)
+			v.ShopBadges = append(v.ShopBadges, shop.Badges)
+			badges = badges || shop.Badges != nil
+		}
+		if !badges {
+			v.ShopBadges = nil
+		}
 		idx.maps[v.ID] = v
 		for _, t := range m.Trainers {
 			byTrainer[t] = append(byTrainer[t], v)

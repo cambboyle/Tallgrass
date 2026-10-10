@@ -64,7 +64,8 @@ Unused species slots (blank or placeholder names) are left out.
 | `connections` | Gen 3 only: `{direction, map, area}` for walking off an edge (`north`, `south`, `east`, `west`, `dive`, `emerge`). DS maps join through the region grid instead, which isn't read. |
 | `warps` | `{map, area}`: where doors, stairs and cave entrances lead, one per destination. |
 | `items` | `{item, quantity, hidden, x, y}`: item balls and hidden items. Quantity is left out when it's 1. |
-| `shops` | Gen 3 only: each shop's stock, in the clerk's order. DS shop stock isn't read yet. |
+| `shops` | Each shop's stock (item names), in the clerk's order. |
+| `shopBadges` | DS only, when a map has a standard Poké Mart: per shop, per item, the badges needed before the clerk sells it (`null` for shops whose stock never changes). The game counts Johto and Kanto badges together. |
 | `trainers` | Trainer IDs battled on this map. |
 
 ## Versioning

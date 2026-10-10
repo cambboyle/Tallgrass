@@ -82,8 +82,16 @@ export default async function AreaPage({ params }: PageProps<"/games/[slug]/area
 
       {area.shops.map((shop, i) => (
         <section key={i} className="stack">
-          <h3>Shop{area.shops.length > 1 ? ` ${i + 1}` : ""}</h3>
-          <div className="chips">{shop.map((it) => <span key={it} className="chip">{it}</span>)}</div>
+          <h3>{shop.badges ? "Poké Mart" : "Shop"}{area.shops.length > 1 && !shop.badges ? ` ${i + 1}` : ""}</h3>
+          <div className="chips">
+            {shop.items.map((it, j) => (
+              <span key={it} className="chip">
+                {it}
+                {shop.badges?.[j] ? <span className="muted"> · {shop.badges[j]} badge{shop.badges[j] > 1 ? "s" : ""}</span> : null}
+              </span>
+            ))}
+          </div>
+          {shop.badges && <p className="muted small">Stock grows with your badge count (Johto and Kanto badges both count).</p>}
         </section>
       ))}
 

@@ -2,13 +2,14 @@ import type { GameData, Trainer } from "./gamedata";
 import { journeyLevels, placeholderTeams, teamKey } from "./journey";
 import { slugify } from "./types";
 
+export type Shop = { items: string[]; badges?: number[] }; // badges each item needs (DS Poké Marts)
 export type Encounter = { species: number; name: string; method: string; when?: string; minLevel: number; maxLevel: number; chance: number };
 export type Area = {
   slug: string;
   name: string;
   encounters: Encounter[];
   items: { item: string; quantity?: number; hidden?: boolean }[];
-  shops: string[][];
+  shops: Shop[];
   trainers: Trainer[];
   leadsTo: string[]; // other areas reachable by walking or a door
   walksTo: string[]; // just the walking ones (route edges)
@@ -38,9 +39,9 @@ export function areas(data: GameData): Area[] {
   for (const m of data.maps) {
     const a = get(m.area);
     a.items.push(...(m.items ?? []));
-    for (const shop of m.shops ?? []) {
-      if (!a.shops.some((s) => s.join() === shop.join())) a.shops.push(shop);
-    }
+    (m.shops ?? []).forEach((items, i) => {
+      if (!a.shops.some((s) => s.items.join() === items.join())) a.shops.push({ items, badges: m.shopBadges?.[i] ?? undefined });
+    });
     for (const l of [...(m.connections ?? []), ...(m.warps ?? [])]) {
       if (l.area !== m.area && !a.leadsTo.includes(l.area)) a.leadsTo.push(l.area);
     }

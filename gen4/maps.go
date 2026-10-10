@@ -6,13 +6,21 @@ import (
 )
 
 // MapInfo is what one DS map holds: where its doors lead, the items lying
-// around (and hidden) and the trainers standing on it.
+// around (and hidden), its shops and the trainers standing on it.
 type MapInfo struct {
 	ID       int
 	Section  int // location name index
 	Warps    []int
 	Items    []MapItem
+	Shops    []Shop
 	Trainers []int
+}
+
+// Shop is one clerk's stock: item IDs, and for the standard Poké Mart the
+// badges each needs (nil for a fixed list).
+type Shop struct {
+	Items  []int
+	Badges []int
 }
 
 type MapItem struct {
@@ -70,6 +78,7 @@ func (d *Data) Maps() ([]MapInfo, error) {
 		balls = findItemBalls(scripts)
 	}
 	hidden := findHiddenItems(x.arm9.Data, len(d.Items))
+	marts := findMarts(x.arm9, d.Layout.Family, len(d.Items))
 
 	var maps []MapInfo
 	parsed := []zoneEvents{}
@@ -97,6 +106,17 @@ func (d *Data) Maps() ([]MapInfo, error) {
 				if !containsInt(m.Trainers, t) {
 					m.Trainers = append(m.Trainers, t)
 				}
+			}
+			standard, special := marts.scriptMarts(scripts[sf])
+			if standard {
+				shop := Shop{}
+				for _, it := range marts.Standard {
+					shop.Items, shop.Badges = append(shop.Items, it.Item), append(shop.Badges, it.Badges)
+				}
+				m.Shops = append(m.Shops, shop)
+			}
+			for _, id := range special {
+				m.Shops = append(m.Shops, Shop{Items: marts.Special[id]})
 			}
 		}
 		maps = append(maps, m)
