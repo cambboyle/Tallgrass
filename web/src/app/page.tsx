@@ -36,7 +36,7 @@ export default async function Home() {
         <h3>Install</h3>
         <p>On your Raspberry Pi (RetroPie) or Linux PC, with your game already playable:</p>
         <pre className="install"><code>curl -fsSL https://tallgrass-delta.vercel.app/install.sh | bash</code></pre>
-        <p className="muted small">Then open the address it prints and pick your game; the setup page checks everything and fixes what it can. Tallgrass keeps itself up to date.</p>
+        <p className="muted small">Then open the address it prints and pick your game; the setup page checks everything and fixes what it can. Tallgrass keeps itself up to date. <Link href="/guide">Read the guide</Link>.</p>
       </section>
 
       <section className="grid">

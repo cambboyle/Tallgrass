@@ -94,3 +94,11 @@ td.num, th.num { text-align: right; font-family: var(--mono); font-variant-numer
 .sort button.on { background: var(--ink); color: var(--paper); border-color: var(--ink); }
 
 .install { margin: 0; padding: 12px 14px; border-radius: 8px; background: var(--paper); border: 1px solid var(--line); overflow-x: auto; font: 14px var(--mono); }
+.stack-sm { display: grid; gap: 8px; align-content: start; }
+.guide ul { margin: 0; padding-left: 20px; display: grid; gap: 4px; }
+.guide code { font: 0.9em var(--mono); background: var(--paper); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; overflow-wrap: anywhere; }
+.guide pre code { background: none; border: 0; padding: 0; }
+.guide section { scroll-margin-top: 16px; }
+.defs { margin: 0; display: grid; gap: 4px; }
+.defs dt { font-weight: 600; margin-top: 8px; }
+.defs dd { margin: 0; }

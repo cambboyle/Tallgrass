@@ -91,6 +91,7 @@ Launch supports three games, done properly: **Radical Red, HeartGold Generations
 - [x] **Device pairing** (2026-10-09, verified with Cam's Pi): dashboard Account page shows a code (XXXX-XXXX, 10 minutes); entering it at /link gives the agent its own key (only its hash is stored).
 - [x] **Public docs website, first version** (2026-10-09): live at https://tallgrass-delta.vercel.app with Radical Red, Unbound and HeartGold Generations uploaded from Cam's Pi. Still to come below:
   - Generated pages per game/hack version, built from M3 data uploaded by agents or maintainers. Only extracted *facts* (stats, learnsets), never sprites or other assets.
+  - [x] User guide at `/guide` (2026-10-11): install, setup wizard, dashboard tour, PIN, account linking, updates, troubleshooting, uninstall.
   - Curated guides and walkthroughs written in-site.
   - Links to a hack's official docs, with its author's permission where content is copied.
 - [ ] **Profile registry:** profiles published by ROM hash. The agent fetches profiles it doesn't have. Community submissions go through review.
