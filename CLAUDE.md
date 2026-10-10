@@ -162,6 +162,7 @@ Also from ROM, via header pointers: front pics `0x08000128`, normal palettes `0x
 
 ## Deploying to the Pi
 
+- **Since 2026-10-11 the Pi runs public releases** (installed with `install.sh`, updates itself from Account → Updates). `make deploy` still works for testing unreleased changes, but it puts a `dev-<commit>` build on the Pi, which stops self-updates until the next release is installed (re-run the installer, or tag a release).
 - `make deploy` runs tests, cross-compiles to `build/`, copies the binary to `/home/pi/tallgrass/` and restarts the service.
 - `make install-service` (one-time) installs `deploy/tallgrass.service`: runs as `pi`, reads RetroArch on `127.0.0.1:55355`, serves `:8080`, `Nice=10` so games keep priority.
 - `make logs` / `make status` for journalctl and systemctl. Dashboard: `http://192.168.0.227:8080`.
@@ -197,12 +198,12 @@ Also from ROM, via header pointers: front pics `0x08000128`, normal palettes `0x
 - `.github/workflows/ci.yml` (vet, test, Pi cross-compile, website lint/build) and `release.yml` (tag `v*` → three Linux builds, `SHA256SUMS`, `SHA256SUMS.sig`, GitHub release). Details in `docs/releasing.md`.
 - `update/`: checks `api.github.com/repos/cambboyle/Tallgrass/releases/latest`; installs only if `SHA256SUMS.sig` verifies with the built-in Ed25519 key and the binary matches its hash, then the process exits and systemd restarts it. Dashboard: Account → Updates, `GET /api/update[?check=1]`, `POST /api/update/apply`; checks every 6 h (`-no-updates` turns it off).
 - The private signing key is `~/.config/tallgrass/release.key` on the Mac and the `RELEASE_SIGNING_KEY` repo secret. Never print it.
-- Installer: `web/public/install.sh` (served at `/install.sh` and attached to releases): detects armv7/arm64/amd64, checks the checksum, installs to `~/tallgrass`, writes the systemd unit. Installs and updates need public releases (the repo is private for now).
+- Installer: `web/public/install.sh` (served at `/install.sh` and attached to releases): detects armv7/arm64/amd64, checks the checksum, installs to `~/tallgrass`, writes the systemd unit. First release: v0.1.0 (2026-10-11).
 - `-host` now defaults to `127.0.0.1:55355`; `make run` passes the Pi's address.
 
 ## Cloud (M4)
 
-- **Repo:** `git@github.com:cambboyle/Tallgrass.git` (private). Commit as Cameron Boyle <cambboyle@gmail.com> (repo-local config); **never add Claude attribution** to commits or PRs.
+- **Repo:** `git@github.com:cambboyle/Tallgrass.git` (**public** since 2026-10-11; no licence file yet, so all rights reserved). `gh` is logged in as cambboyle. Commit as Cameron Boyle <cambboyle@gmail.com> (repo-local config); **never add Claude attribution** to commits or PRs.
 - **Supabase project** `ifjlueqhuyaafjuzltoi` (London). Schema in `supabase/migrations/` (apply with the Supabase MCP `apply_migration`, then keep the file in the repo): `profiles` (auto-created on sign-up; `is_maintainer` set by hand), `devices` (SHA-256 of each device key), `pairing_codes` (server-only), `games` (the three focus games by ROM SHA-1), `game_data` (uploaded exports; files in the public `gamedata` bucket).
 - **Edge Functions** (`supabase/functions/`, all `verify_jwt = false`, callers checked in code): `pair-start` → code + poll secret; `pair-claim` (user session) → creates the device; `pair-poll` → hands the device key over once; `device` (device key) → account info; `gamedata-upload` (device key, maintainers) → stores an export. The MCP deploy takes each function's files plus `_shared/util.ts`.
 - **Agent:** `cloud/` client; dashboard Account page (`/api/cloud*`); device key in `cloud-link.json` (0600, next to the binary). Flags `-cloud`, `-site`, `-link-file`. The anon key is compiled in (public by design).
