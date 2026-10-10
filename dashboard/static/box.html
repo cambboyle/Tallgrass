@@ -131,8 +131,8 @@ async function load(first) {
 }
 
 load(true);
-// Live boxes refresh while open; a 33 KB read every 15 s is nothing for the Pi.
-if (live) setInterval(() => { if (!document.hidden) load(false); }, 15000);
+// Live boxes refresh while open: about 64 KB every 5 s, a few frames of emulator time.
+if (live) setInterval(() => { if (!document.hidden) load(false); }, 5000);
 </script>
 </body>
 </html>

@@ -28,7 +28,10 @@ type dsLive struct {
 	trainer   string
 	trainID   uint32
 
-	locOffset  int // where the player's location record is in the general block; -1 unknown
+	locOffset  int           // where the player's location record is in the general block; -1 unknown
+	dex        *gen4.Pokedex // where the Pokédex flags are; nil until found
+	seen       []byte
+	caught     []byte
 	location   *Location
 	encounters map[int][]gen3.PeriodEncounters // by wild encounter file
 }
@@ -75,7 +78,7 @@ func (s *Server) dsSnapshot(r *emulator.Running) State {
 			l.misses++
 			if l.misses > 2 {
 				log.Printf("%s's save data moved; looking for it again", st.Game)
-				l.general, l.party, l.locOffset, l.misses = 0, nil, -1, 0
+				l.general, l.party, l.locOffset, l.misses, l.dex = 0, nil, -1, 0, nil
 			}
 		}
 	}
@@ -93,12 +96,13 @@ func (s *Server) dsSnapshot(r *emulator.Running) State {
 				l.party = append(l.party, m)
 			}
 		} else if l.misses++; l.misses > 30 {
-			l.general, l.party, l.locOffset = 0, nil, -1 // the game was probably reset: find the block again
+			l.general, l.party, l.locOffset, l.dex = 0, nil, -1, nil // the game was probably reset: find the block again
 		}
 	}
 	s.mu.Lock()
 	s.dsAt.pid, s.dsAt.general = l.pid, l.general
 	s.mu.Unlock()
+	s.dsReadDex(l)
 	if l.party == nil {
 		st.Error = "Looking for your party in the game's memory…"
 		return st
@@ -173,8 +177,40 @@ func dsMember(d *gen4.Data, p *gen3.Pokemon) *Member {
 	return m
 }
 
+// dsReadDex reads the Pokédex's caught and seen flags (finding them first).
+func (s *Server) dsReadDex(l *dsLive) {
+	if l.general == 0 {
+		return
+	}
+	if l.dex == nil {
+		g, err := l.mem.Read(l.general, 0x10000)
+		if err != nil {
+			return
+		}
+		dex, ok := gen4.FindPokedex(g, l.data.SpeciesCount())
+		if !ok {
+			return
+		}
+		l.dex = &dex
+	}
+	if b, err := l.mem.Read(l.general+uint32(l.dex.Caught), l.dex.Size); err == nil {
+		l.caught = b
+	}
+	if b, err := l.mem.Read(l.general+uint32(l.dex.Seen), l.dex.Size); err == nil {
+		l.seen = b
+	}
+}
+
 func dsObservation(l *dsLive) tracker.Observation {
 	o := tracker.Observation{At: time.Now(), TrainerID: l.trainID, PlayerName: l.trainer, Section: -1}
+	if l.caught != nil {
+		o.DexCaught = []int{}
+		for sp := 1; sp < len(l.caught)*8; sp++ {
+			if gen4.Has(l.caught, sp) {
+				o.DexCaught = append(o.DexCaught, sp) // Gen 4 species IDs are national numbers
+			}
+		}
+	}
 	if l.location != nil {
 		o.Section, o.Area = l.location.Section, l.location.Name
 	}
@@ -240,7 +276,9 @@ func (s *Server) dsLocation(l *dsLive) (*Location, error) {
 			for _, e := range m.Encounters {
 				mv.Encounters = append(mv.Encounters, EncounterView{Encounter: e,
 					Name:   gen4.Name(l.data.Species, e.Species),
-					Sprite: s.dsSpriteURL(l.data, &gen3.Pokemon{Species: e.Species})})
+					Sprite: s.dsSpriteURL(l.data, &gen3.Pokemon{Species: e.Species}),
+					Seen:   gen4.Has(l.seen, e.Species),
+					Caught: gen4.Has(l.caught, e.Species)})
 			}
 			pv.Methods = append(pv.Methods, mv)
 		}

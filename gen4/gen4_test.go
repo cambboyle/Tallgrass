@@ -337,3 +337,24 @@ func TestROMMoves(t *testing.T) {
 		})
 	}
 }
+
+func TestFindPokedex(t *testing.T) {
+	g := make([]byte, 0x2000)
+	le.PutUint32(g[0x14A8:], dexMagic)
+	caught, seen := 0x14AC, 0x14AC+0x3FC
+	set := func(at, species int) { g[at+(species-1)/8] |= 1 << ((species - 1) % 8) }
+	set(caught, 155)
+	for _, sp := range []int{16, 155, 161, 714} {
+		set(seen, sp)
+	}
+	for i := 0; i < 0x3C; i++ {
+		g[caught+0x104+i] = 0xFF // filler between the arrays
+	}
+	dex, ok := FindPokedex(g, 1393)
+	if !ok || dex.Caught != caught || dex.Seen != seen {
+		t.Fatalf("got %+v %v, want caught %#x seen %#x", dex, ok, caught, seen)
+	}
+	if !Has(g[dex.Seen:dex.Seen+dex.Size], 714) || Has(g[dex.Caught:dex.Caught+dex.Size], 714) {
+		t.Error("Scatterbug should be seen, not caught")
+	}
+}
