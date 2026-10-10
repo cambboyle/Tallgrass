@@ -24,10 +24,12 @@
 const params = new URLSearchParams(location.search);
 // Only ever go back to a page on this dashboard: resolve the target and
 // check its origin (prefix checks miss tricks like "/\t/evil.example").
-let safe = "/";
+// Navigate to the full URL that was checked, never a re-parsed path: a path
+// like "//evil.example" would itself point somewhere else.
+let safe = new URL("/", location.origin).href;
 try {
   const u = new URL(params.get("next") || "/", location.origin);
-  if (u.origin === location.origin) safe = u.pathname + u.search + u.hash;
+  if (u.origin === location.origin) safe = u.href;
 } catch {}
 document.getElementById("form").addEventListener("submit", async (e) => {
   e.preventDefault();
