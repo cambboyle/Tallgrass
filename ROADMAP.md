@@ -57,7 +57,8 @@ Launch supports three games, done properly: **Radical Red, HeartGold Generations
 - Restores are now refused only while *that save's* game is open (was: any game).
 
 ### M2: More games
-- [x] **Unbound profile** (2026-10-09): verified against its ROM, Cam's real save and the running game (party, items, location, live PC, Pokédex 20/69). Its long names are pointers (`gen3.ReadName`). Time-of-day encounters not yet seen live (Cam was in a town).
+- [x] **Unbound profile** (2026-10-09): verified against its ROM, Cam's real save and the running game (party, items, location, live PC, Pokédex 20/69). Its long names are pointers (`gen3.ReadName`). Time-of-day periods verified from its code (2026-10-10).
+- [x] **Focus-game polish** (2026-10-10): Radical Red and Unbound boxes 20–25 (CFRU box table; sectors 30–31, SaveBlock1, SaveBlock2); HeartGold Generations live PC from RAM, caught/seen marks from the Gen 4 Pokédex, recovery when DraStic's save data moves; Boxes tab refreshes every 5 s.
 - [x] **Emerald (US) profile** (2026-10-09): ROM tables verified; RAM addresses confirmed by code-reference counts, not yet live.
 - [x] **Automatic profiles** (`autoprofile/`) for FireRed-engine hacks (CFRU and classic): match the hand-made Radical Red/Unbound profiles exactly; generated for Odyssey and Sword & Shield Ultimate Plus. Library shows "auto-detected" / "not yet tested live".
 - [ ] Vanilla FireRed: still unverified (no ROM on the Pi).
