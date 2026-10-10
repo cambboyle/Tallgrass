@@ -123,7 +123,12 @@ func (s *Server) dsSnapshot(r *emulator.Running) State {
 		st.Party = append(st.Party, nil)
 	}
 	if s.engine != nil {
-		if err := s.engine.Observe(dsObservation(l)); err != nil {
+		o := dsObservation(l)
+		if time.Since(s.lastPC) >= pcReadEvery {
+			s.lastPC = time.Now()
+			o.Boxes = s.dsPCMons(l, r.ROM)
+		}
+		if err := s.engine.Observe(o); err != nil {
 			log.Printf("tracking: %v", err)
 		}
 		s.applySettings()
@@ -303,6 +308,69 @@ func (s *Server) dsLocation(l *dsLive) (*Location, error) {
 // save file says how big the blocks are and how far the PC is from the
 // live general block. It refuses (so the caller can fall back to the save
 // file) unless the RAM still looks like that save's data.
+// readLivePC reads the live general and storage blocks: the game keeps its
+// whole save in RAM with the save file's layout, so storage sits at the same
+// distance from the general block as in the file. Box 1's name must match
+// the save's, or this isn't the PC.
+func readLivePC(read func(uint32, int) ([]byte, error), general uint32, saved *gen4.Save, l gen4.Layout) (*gen4.Save, error) {
+	g, err := read(general, len(saved.General))
+	if err != nil {
+		return nil, err
+	}
+	st, err := read(general+uint32(saved.StorageOffset), len(saved.Storage))
+	if err != nil {
+		return nil, err
+	}
+	live := &gen4.Save{General: g, Storage: st, Counter: saved.Counter, StorageOffset: saved.StorageOffset}
+	if !gen4.CheckGeneral(g, l) || live.BoxName(l, 0) == "" || live.BoxName(l, 0) != saved.BoxName(l, 0) {
+		return nil, errors.New("the PC in memory doesn't match the save's layout")
+	}
+	return live, nil
+}
+
+// dsPCMons reads every Pokémon in the live PC, for the tracker; nil when it
+// can't be read this time.
+func (s *Server) dsPCMons(l *dsLive, rom string) []tracker.PartyMon {
+	if s.saves == nil || l.general == 0 || l.misses != 0 {
+		return nil
+	}
+	files := s.saves.SaveFor(rom)
+	if len(files) == 0 {
+		return nil
+	}
+	data, err := s.saves.ReadCurrent(files[0])
+	if err != nil {
+		return nil
+	}
+	saved, err := gen4.ParseSave(data)
+	if err != nil {
+		return nil
+	}
+	live, err := readLivePC(l.mem.Read, l.general, saved, l.data.Layout)
+	if err != nil {
+		return nil
+	}
+	mons := []tracker.PartyMon{}
+	for b := 0; b < live.Boxes(l.data.Layout); b++ {
+		box, err := live.Box(l.data.Layout, b)
+		if err != nil {
+			return nil
+		}
+		for _, p := range box {
+			if p == nil {
+				continue
+			}
+			mons = append(mons, tracker.PartyMon{
+				Personality: p.Personality, Species: p.Species, SpeciesName: gen4.Name(l.data.Species, p.Species),
+				National: p.Species, // Gen 4 species IDs are national numbers
+				Nickname: p.Nickname, Level: l.data.Level(p.Species, p.Experience), IsEgg: p.IsEgg,
+				MetSection: p.MetLocation, MetArea: gen4.Name(l.data.Locations, p.MetLocation),
+			})
+		}
+	}
+	return mons
+}
+
 func (s *Server) liveDSView() (*SaveView, error) {
 	running, _ := s.game()
 	if running == nil || running.Emulator != "drastic" || s.saves == nil {
@@ -335,17 +403,9 @@ func (s *Server) liveDSView() (*SaveView, error) {
 		return nil, err
 	}
 	defer mem.Close()
-	g, err := mem.Read(general, len(saved.General))
+	live, err := readLivePC(mem.Read, general, saved, d.Layout)
 	if err != nil {
 		return nil, err
-	}
-	st, err := mem.Read(general+uint32(saved.StorageOffset), len(saved.Storage))
-	if err != nil {
-		return nil, err
-	}
-	live := &gen4.Save{General: g, Storage: st, Counter: saved.Counter, StorageOffset: saved.StorageOffset}
-	if !gen4.CheckGeneral(g, d.Layout) || live.BoxName(d.Layout, 0) == "" || live.BoxName(d.Layout, 0) != saved.BoxName(d.Layout, 0) {
-		return nil, errors.New("the PC in memory doesn't match the save's layout")
 	}
 	view, err := s.dsSaveView(running.ROM, d, live)
 	if err != nil {
