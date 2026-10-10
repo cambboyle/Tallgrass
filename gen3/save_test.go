@@ -184,3 +184,36 @@ func TestReadNameFollowsPointers(t *testing.T) {
 		}
 	}
 }
+
+// Extra sectors (outside both slots) are joined into Save.Extra, and BoxAt
+// reads a box from any block.
+func TestExtraSectorsAndBoxAt(t *testing.T) {
+	data := make([]byte, 32*sectorSize)
+	for slot := 0; slot < 2; slot++ {
+		for i := 0; i < sectorsPerSlot; i++ {
+			sec := data[(slot*sectorsPerSlot+i)*sectorSize:]
+			binary.LittleEndian.PutUint16(sec[footerID:], uint16(i))
+			binary.LittleEndian.PutUint32(sec[footerSignature:], saveSignature)
+			binary.LittleEndian.PutUint32(sec[footerCounter:], uint32(slot+1))
+		}
+	}
+	// A compressed Pokémon (species 25) in box slot 2 of a box starting at
+	// 0xB0C in sector 30; it runs on into sector 31.
+	at := 30*sectorSize + 0xB0C + 58
+	binary.LittleEndian.PutUint32(data[at:], 0x12345678)
+	binary.LittleEndian.PutUint16(data[at+0x1C:], 25)
+	s, err := ParseSave(data, SaveLayout{SectorDataSize: 0xFF0, ExtraSectors: []int{30, 31}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(s.Extra) != 2*0xFF0 {
+		t.Fatalf("extra is %d bytes", len(s.Extra))
+	}
+	mons, err := s.BoxAt("extra", 0xB0C, BoxFormat{Size: 58})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if mons[0] != nil || mons[1] == nil || mons[1].Species != 25 {
+		t.Errorf("slots 1-2: %+v %+v", mons[0], mons[1])
+	}
+}

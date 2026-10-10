@@ -535,6 +535,9 @@ func (s *Server) handleBoxes(w http.ResponseWriter, r *http.Request) {
 		Block1:  read(sf.RAM.SaveBlock1, 4*size),
 		Storage: read(sf.RAM.Storage, 9*size),
 	}
+	if len(sf.ExtraSectors) > 0 && sf.RAM.Extra.Addr != 0 {
+		save.Extra = read(sf.RAM.Extra, len(sf.ExtraSectors)*size)
+	}
 	if err != nil {
 		http.Error(w, "reading game memory: "+err.Error(), http.StatusServiceUnavailable)
 		return
@@ -559,7 +562,23 @@ func (rc *romContext) layout() gen3.SaveLayout {
 		PartyOffset:    int(sf.PartyOffset),
 		SectorDataSize: int(sf.SectorDataSize), VerifyChecksums: sf.VerifyChecksums,
 		Block2Size: int(sf.Block2Size), Block1Size: int(sf.Block1Size), StorageSize: int(sf.StorageSize),
+		ExtraSectors: sf.ExtraSectors,
 	}
+}
+
+// readBox reads box n (from 0): PC storage for the first sf.Boxes, then any
+// extra groups the profile describes. ok is false for a box we can't place.
+func readBox(save *gen3.Save, sf *profile.SaveFile, n int, format gen3.BoxFormat) (mons []*gen3.Pokemon, ok bool, err error) {
+	if n < sf.Boxes {
+		mons, err = save.Box(n, format)
+		return mons, true, err
+	}
+	block, offset, ok := sf.Place(n + 1)
+	if !ok {
+		return nil, false, nil
+	}
+	mons, err = save.BoxAt(block, offset, format)
+	return mons, true, err
 }
 
 // view builds the viewer's data from a save, whether parsed from a file or
@@ -569,7 +588,7 @@ func (rc *romContext) view(save *gen3.Save) (*SaveView, error) {
 	encrypted := rc.prof.EncryptedData
 
 	v := &SaveView{Game: rc.prof.Name, ROM: rc.id, Counter: save.Counter, Party: []*SaveMon{}, Boxes: []SaveBox{},
-		CurrentBox: save.CurrentBox(), HiddenBoxes: max(0, sf.TotalBoxes-sf.Boxes)}
+		CurrentBox: save.CurrentBox()}
 	v.Trainer.Name, v.Trainer.ID = save.Trainer()
 
 	party, err := save.Party(encrypted)
@@ -582,10 +601,14 @@ func (rc *romContext) view(save *gen3.Save) (*SaveView, error) {
 		}
 	}
 
-	for b := 0; b < sf.Boxes; b++ {
-		mons, err := save.Box(b, gen3.BoxFormat{Size: sf.BoxMonSize, Encrypted: encrypted})
+	for b := 0; b < max(sf.Boxes, sf.TotalBoxes); b++ {
+		mons, ok, err := readBox(save, sf, b, gen3.BoxFormat{Size: sf.BoxMonSize, Encrypted: encrypted})
 		if err != nil {
 			return nil, err
+		}
+		if !ok {
+			v.HiddenBoxes++ // a box the game has that we can't find yet
+			continue
 		}
 		box := SaveBox{Name: save.BoxName(b, int(sf.BoxNames)), Mons: make([]*SaveMon, len(mons))}
 		for i, p := range mons {

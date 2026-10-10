@@ -56,6 +56,12 @@
     "boxes": 19,
     "totalBoxes": 25,
     "boxNames": "0x8344",
+    "extraBoxes": [
+      {"first": 20, "last": 22, "block": "extra", "offset": "0xB0C"},
+      {"first": 23, "last": 24, "block": "block1", "offset": "0x1F08"},
+      {"first": 25, "last": 25, "block": "block2", "offset": "0xB0"}
+    ],
+    "extraSectors": [30, 31],
     "dexSeen": {
       "block": 1,
       "offset": "0x310"
@@ -67,7 +73,8 @@
     "ram": {
       "saveBlock1": "[0x03005008]",
       "saveBlock2": "[0x0300500C]",
-      "storage": "[0x03005010]"
+      "storage": "[0x03005010]",
+      "extra": "0x0203C038"
     }
   },
   "experience": {

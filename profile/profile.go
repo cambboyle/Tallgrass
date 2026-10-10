@@ -99,6 +99,10 @@ type SaveFile struct {
 	Boxes      int  `json:"boxes"`      // boxes we can read, stored back to back
 	TotalBoxes int  `json:"totalBoxes"` // boxes the game has
 	BoxNames   Addr `json:"boxNames"`   // offset of box 1's name in PC storage
+	// Boxes past Boxes that a hack keeps elsewhere, and the extra sectors
+	// (outside both save slots) some of them use.
+	ExtraBoxes   []BoxGroup `json:"extraBoxes"`
+	ExtraSectors []int      `json:"extraSectors"`
 
 	DexSeen   BlockOffset `json:"dexSeen"` // flag arrays; size from pokedex.flagBytes
 	DexCaught BlockOffset `json:"dexCaught"`
@@ -111,6 +115,26 @@ type SaveRAM struct {
 	SaveBlock1 Ref `json:"saveBlock1"`
 	SaveBlock2 Ref `json:"saveBlock2"`
 	Storage    Ref `json:"storage"`
+	Extra      Ref `json:"extra"` // the RAM that ExtraSectors are saved from
+}
+
+// BoxGroup is a run of boxes (numbered from 1) stored back to back from
+// Offset in a block: "block1", "block2" or "extra".
+type BoxGroup struct {
+	First  int    `json:"first"`
+	Last   int    `json:"last"`
+	Block  string `json:"block"`
+	Offset Addr   `json:"offset"`
+}
+
+// Place says where box n (from 1) lives, if it's in an extra group.
+func (sf *SaveFile) Place(n int) (block string, offset int, ok bool) {
+	for _, g := range sf.ExtraBoxes {
+		if n >= g.First && n <= g.Last {
+			return g.Block, int(g.Offset) + (n-g.First)*30*sf.BoxMonSize, true
+		}
+	}
+	return "", 0, false
 }
 
 // BlockOffset is a position in SaveBlock1 or SaveBlock2.

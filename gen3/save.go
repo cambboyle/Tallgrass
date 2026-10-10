@@ -29,6 +29,10 @@ type SaveLayout struct {
 	// outside the checksummed range, so they leave this off.
 	VerifyChecksums                     bool
 	Block2Size, Block1Size, StorageSize int
+	// ExtraSectors are sectors outside the two save slots that a hack uses
+	// for more data (Radical Red keeps boxes 20–22 in sectors 30 and 31).
+	// They're joined in order into Save.Extra.
+	ExtraSectors []int
 }
 
 // Save is one slot of a save file, reassembled.
@@ -38,6 +42,7 @@ type Save struct {
 	Block2      []byte // trainer
 	Block1      []byte // world, party, items
 	Storage     []byte // PC boxes
+	Extra       []byte // the layout's ExtraSectors, joined
 }
 
 // ParseSave picks the newest valid slot.
@@ -59,6 +64,12 @@ func ParseSave(data []byte, layout SaveLayout) (*Save, error) {
 	}
 	if best == nil {
 		return nil, fmt.Errorf("no valid save slot: %v", errs)
+	}
+	size := layout.SectorDataSize
+	for _, sec := range layout.ExtraSectors {
+		if (sec+1)*sectorSize <= len(data) {
+			best.Extra = append(best.Extra, data[sec*sectorSize:sec*sectorSize+size]...)
+		}
 	}
 	return best, nil
 }
@@ -190,6 +201,40 @@ func (s *Save) Box(box int, format BoxFormat) ([]*Pokemon, error) {
 // sit from namesOffset onwards as in vanilla. CFRU's extra boxes (15+) are
 // stored just before Box 1's name in reverse order, so Box 15 is at
 // namesOffset-9.
+// Data returns a block by name: "block1", "block2", "storage" or "extra".
+func (s *Save) Data(block string) []byte {
+	switch block {
+	case "block1":
+		return s.Block1
+	case "block2":
+		return s.Block2
+	case "storage":
+		return s.Storage
+	case "extra":
+		return s.Extra
+	}
+	return nil
+}
+
+// BoxAt reads a box stored outside PC storage: 30 Pokémon back to back from
+// offset in the named block (see Data).
+func (s *Save) BoxAt(block string, offset int, format BoxFormat) ([]*Pokemon, error) {
+	data := s.Data(block)
+	mons := make([]*Pokemon, BoxSlots)
+	for slot := range mons {
+		off := offset + slot*format.Size
+		if off < 0 || off+format.Size > len(data) {
+			return nil, fmt.Errorf("box is outside the %s block", block)
+		}
+		p, err := format.decode(data[off : off+format.Size])
+		if err != nil {
+			return nil, err
+		}
+		mons[slot] = p
+	}
+	return mons, nil
+}
+
 func (s *Save) BoxName(box, namesOffset int) string {
 	off := namesOffset + box*9
 	if box >= 14 {

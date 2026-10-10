@@ -31,3 +31,19 @@ func TestResolve(t *testing.T) {
 		t.Errorf("got %08X", got)
 	}
 }
+
+func TestBoxPlace(t *testing.T) {
+	sf := &SaveFile{BoxMonSize: 58, ExtraBoxes: []BoxGroup{
+		{First: 20, Last: 22, Block: "extra", Offset: 0xB0C},
+		{First: 25, Last: 25, Block: "block2", Offset: 0xB0},
+	}}
+	if b, off, ok := sf.Place(21); !ok || b != "extra" || off != 0xB0C+30*58 {
+		t.Errorf("box 21: %s %#x %v", b, off, ok)
+	}
+	if b, off, ok := sf.Place(25); !ok || b != "block2" || off != 0xB0 {
+		t.Errorf("box 25: %s %#x %v", b, off, ok)
+	}
+	if _, _, ok := sf.Place(23); ok {
+		t.Error("box 23 isn't in any group")
+	}
+}

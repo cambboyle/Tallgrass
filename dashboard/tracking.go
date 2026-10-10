@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"tallgrass/gen3"
+	"tallgrass/profile"
 	"tallgrass/tracker"
 )
 
@@ -157,22 +158,43 @@ func (s *Server) pcMons() ([]tracker.PartyMon, error) {
 		s.levels = gen3.NewLevels(s.read, base, table, exp.RowLength)
 	}
 
-	addr, err := sf.RAM.Storage.Resolve(s.read)
-	if err != nil {
-		return nil, err
-	}
 	format := gen3.BoxFormat{Size: sf.BoxMonSize, Encrypted: s.prof.EncryptedData}
-	storage, err := s.read(addr, 4+sf.Boxes*gen3.BoxSlots*format.Size)
-	if err != nil {
-		return nil, err
-	}
-	pc := &gen3.Save{Storage: storage}
-
-	mons := []tracker.PartyMon{}
-	for b := 0; b < sf.Boxes; b++ {
-		box, err := pc.Box(b, format)
+	pc := &gen3.Save{}
+	readRef := func(ref profile.Ref, n int) ([]byte, error) {
+		addr, err := ref.Resolve(s.read)
 		if err != nil {
 			return nil, err
+		}
+		return s.read(addr, n)
+	}
+	var err error
+	if pc.Storage, err = readRef(sf.RAM.Storage, 4+sf.Boxes*gen3.BoxSlots*format.Size); err != nil {
+		return nil, err
+	}
+	// Boxes kept outside PC storage: read just the blocks they use.
+	size := int(sf.SectorDataSize)
+	for _, g := range sf.ExtraBoxes {
+		switch {
+		case g.Block == "block1" && pc.Block1 == nil:
+			pc.Block1, err = readRef(sf.RAM.SaveBlock1, 4*size)
+		case g.Block == "block2" && pc.Block2 == nil:
+			pc.Block2, err = readRef(sf.RAM.SaveBlock2, size)
+		case g.Block == "extra" && pc.Extra == nil:
+			pc.Extra, err = readRef(sf.RAM.Extra, len(sf.ExtraSectors)*size)
+		}
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	mons := []tracker.PartyMon{}
+	for b := 0; b < max(sf.Boxes, sf.TotalBoxes); b++ {
+		box, ok, err := readBox(pc, sf, b, format)
+		if err != nil {
+			return nil, err
+		}
+		if !ok {
+			continue
 		}
 		for _, p := range box {
 			if p == nil {
