@@ -98,7 +98,7 @@ Launch supports three games, done properly: **Radical Red, HeartGold Generations
 - [ ] **Optional sync:** save backups and the event log to the cloud.
 
 ### M5: Bank
-- [ ] **Bridge first:** download a save from the agent → edit it in OpenHome → upload it back. The agent backs up before accepting the upload and refuses while the game runs. This works with stock OpenHome today, so ship it first.
+- [x] **Bridge first** (2026-10-11): download a save from the agent → edit it in OpenHome → upload it back (Saves → Upload edited save, `POST /api/saves/upload`). The agent checks it's a save of the same kind, backs up first and refuses while the game runs; bare 512 KB DS saves get DraStic's footer back.
 - [ ] **Deeper integration:** OpenHome talks to the agent directly (browse and pull/push device saves without manual files). Ideally contributed upstream; otherwise in a fork.
 - [ ] **Account-linked bank:** an OpenHome bank stored in the user's cloud account, so it follows them between devices.
 

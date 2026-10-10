@@ -1,6 +1,7 @@
 package dashboard
 
 import (
+	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -73,4 +74,51 @@ func TestSavesAPI(t *testing.T) {
 	if rec := do("POST", "/api/saves/restore", "application/json", body); rec.Code != http.StatusNoContent {
 		t.Errorf("restore: %d %s", rec.Code, rec.Body)
 	}
+
+	// Uploading an edited save: only a real Gen 3 save, sent as raw bytes,
+	// with the game closed; shorter uploads are padded to the file's size.
+	path := filepath.Join(roms, "gba", "Game.srm")
+	os.WriteFile(path, fakeGen3Save(0x20000), 0o644)
+	edited := fakeGen3Save(0x10000 * 2)
+	edited[100] = 0xAB
+	upload := func(contentType string, data []byte) int {
+		req := httptest.NewRequest("POST", "/api/saves/upload?file=gba/Game.srm", strings.NewReader(string(data)))
+		req.Header.Set("Content-Type", contentType)
+		rec := httptest.NewRecorder()
+		h.ServeHTTP(rec, req)
+		return rec.Code
+	}
+	if code := upload("application/x-www-form-urlencoded", edited); code != http.StatusUnsupportedMediaType {
+		t.Errorf("form upload: %d", code)
+	}
+	if code := upload("application/octet-stream", []byte("not a save")); code != http.StatusBadRequest {
+		t.Errorf("garbage upload: %d", code)
+	}
+	game = true
+	s.update(s.Snapshot())
+	if code := upload("application/octet-stream", edited); code != http.StatusConflict {
+		t.Errorf("upload while playing: %d", code)
+	}
+	game = false
+	s.update(s.Snapshot())
+	before, _ := watcher.Files()
+	if code := upload("application/octet-stream", edited[:0x1C000]); code != http.StatusNoContent {
+		t.Errorf("upload: %d", code)
+	}
+	got, _ := os.ReadFile(path)
+	if len(got) != 0x20000 || got[100] != 0xAB {
+		t.Errorf("uploaded save: %d bytes, byte 100 = %X", len(got), got[100])
+	}
+	if after, _ := watcher.Files(); len(after[0].Versions) != len(before[0].Versions)+1 {
+		t.Errorf("the save before the upload wasn't backed up: %d → %d versions", len(before[0].Versions), len(after[0].Versions))
+	}
+}
+
+// fakeGen3Save is n bytes whose first 28 sectors carry a Gen 3 footer.
+func fakeGen3Save(n int) []byte {
+	b := make([]byte, n)
+	for i := 0; i < 28; i++ {
+		binary.LittleEndian.PutUint32(b[i*0x1000+0xFF8:], 0x08012025)
+	}
+	return b
 }

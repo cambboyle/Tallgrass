@@ -13,6 +13,8 @@
 </header>
 <div id="error"></div>
 <p class="note">A copy is kept every time a save file changes on disk. RetroArch writes it within a minute of an in-game save (autosave every 60 s) and when you close the game.</p>
+<p class="note">To move Pokémon with a save editor such as <a href="https://github.com/andrewbenington/OpenHome">OpenHome</a>: close the game, download the latest version, edit it, then <b>Upload edited save</b>. The current save is backed up first.</p>
+<input type="file" id="upload" hidden>
 <main id="saves" class="saves"></main>
 
 <script>
@@ -42,7 +44,7 @@ function fileHTML(f) {
     ? `<button class="btn more" data-toggle="${esc(f.path)}">${all ? "Show fewer" : `Show all ${f.versions.length}`}</button>` : "";
 
   return `<div class="card save">
-    <div class="top"><span class="name">${esc(f.name)}</span><a class="btn" href="box.html?file=${encodeURIComponent(f.path)}">View boxes</a></div>
+    <div class="top"><span class="name">${esc(f.name)}</span><span class="actions"><a class="btn" href="box.html?file=${encodeURIComponent(f.path)}">View boxes</a><button class="btn" ${busy} data-upload="${esc(f.path)}">Upload edited save</button></span></div>
     <div class="sub">${esc(f.system)} · changed ${when(f.modified)} · ${kb(f.size)} · ${f.versions.length} version${f.versions.length === 1 ? "" : "s"}</div>
     ${f.versions.length ? `<ul class="versions">${rows}</ul>${more}` : `<div class="sub">Backing up shortly…</div>`}
   </div>`;
@@ -77,6 +79,14 @@ document.getElementById("saves").addEventListener("click", async (e) => {
     render();
     return;
   }
+  const up = e.target.closest("button[data-upload]");
+  if (up) {
+    const input = document.getElementById("upload");
+    input.dataset.file = up.dataset.upload;
+    input.value = "";
+    input.click();
+    return;
+  }
   const btn = e.target.closest("button[data-version]");
   if (!btn) return;
   const { file, version } = btn.dataset;
@@ -88,6 +98,18 @@ document.getElementById("saves").addEventListener("click", async (e) => {
     body: JSON.stringify({ file, version }),
   });
   if (!res.ok) alert(`Restore failed: ${await res.text()}`);
+  load();
+});
+
+document.getElementById("upload").addEventListener("change", async (e) => {
+  const input = e.target, f = input.files[0], file = input.dataset.file;
+  if (!f || !confirm(`Replace ${file} with ${f.name}?\n\nThe current save is backed up first, so you can undo this.`)) return;
+  const res = await fetch(`/api/saves/upload?file=${encodeURIComponent(file)}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/octet-stream" },
+    body: f,
+  });
+  alert(res.ok ? `Uploaded. Start the game to play with the edited save.` : `Upload failed: ${await res.text()}`);
   load();
 });
 

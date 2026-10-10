@@ -1,13 +1,18 @@
 package dashboard
 
 import (
+	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"path"
+	"path/filepath"
+	"strings"
 
 	"tallgrass/emulator"
+	"tallgrass/gen4"
 	"tallgrass/profile"
 	"tallgrass/saves"
 )
@@ -114,4 +119,84 @@ func (s *Server) handleSaveRestore(w http.ResponseWriter, r *http.Request) {
 	default:
 		w.WriteHeader(http.StatusNoContent)
 	}
+}
+
+// handleSaveUpload replaces a save with an uploaded one: POST
+// /api/saves/upload?file=<path>, the save's bytes as
+// application/octet-stream (which a plain form on another site can't send).
+// The upload must be a save of the same kind; the current file is backed
+// up first, and nothing is written while that game is running.
+func (s *Server) handleSaveUpload(w http.ResponseWriter, r *http.Request) {
+	if s.saves == nil {
+		http.NotFound(w, r)
+		return
+	}
+	if r.Header.Get("Content-Type") != "application/octet-stream" {
+		http.Error(w, "expected application/octet-stream", http.StatusUnsupportedMediaType)
+		return
+	}
+	rel := r.URL.Query().Get("file")
+	data, err := io.ReadAll(http.MaxBytesReader(w, r.Body, 2<<20))
+	if err != nil {
+		http.Error(w, "the file is too big to be a save", http.StatusRequestEntityTooLarge)
+		return
+	}
+	current, err := s.saves.ReadCurrent(rel)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	data, err = checkUpload(rel, current, data)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	err = s.saves.Replace(rel, data, s.saveInUse(rel))
+	switch {
+	case errors.Is(err, saves.ErrGameRunning):
+		http.Error(w, err.Error(), http.StatusConflict)
+	case err != nil:
+		http.Error(w, err.Error(), http.StatusBadRequest)
+	default:
+		w.WriteHeader(http.StatusNoContent)
+	}
+}
+
+// checkUpload makes sure an upload is a save the game will load in place of
+// current, and returns it ready to write. DraStic saves (.dsv) end with a
+// footer that save editors drop; a bare 512 KB save gets current's back.
+func checkUpload(rel string, current, data []byte) ([]byte, error) {
+	if strings.EqualFold(filepath.Ext(rel), ".dsv") {
+		const raw = 512 << 10
+		if len(data) == raw && len(current) > raw {
+			data = append(append([]byte{}, data...), current[raw:]...)
+		}
+		if _, err := gen4.ParseSave(data); err != nil {
+			return nil, fmt.Errorf("that isn't a DS Pokémon save: %w", err)
+		}
+		if len(data) != len(current) {
+			return nil, fmt.Errorf("that save is %d bytes; this one is %d", len(data), len(current))
+		}
+		return data, nil
+	}
+	if gen3Sectors(data) < 14 {
+		return nil, errors.New("that isn't a Game Boy Advance Pokémon save")
+	}
+	if len(data) < len(current) {
+		// RetroArch's .srm is the full 128 KB; editors may write less.
+		data = append(append([]byte{}, data...), make([]byte, len(current)-len(data))...)
+	}
+	return data, nil
+}
+
+// gen3Sectors counts the 4 KB sectors that end with a Gen 3 save footer
+// signature (vanilla 0x08012025, Unbound 0x01121999).
+func gen3Sectors(data []byte) int {
+	n := 0
+	for o := 0; o+0x1000 <= len(data) && o < 32*0x1000; o += 0x1000 {
+		if sig := binary.LittleEndian.Uint32(data[o+0xFF8:]); sig == 0x08012025 || sig == 0x01121999 {
+			n++
+		}
+	}
+	return n
 }

@@ -214,7 +214,30 @@ func (w *Watcher) Restore(rel, id string, gameRunning bool) error {
 	if err != nil {
 		return err
 	}
+	if err := w.replace(rel, data); err != nil {
+		return err
+	}
+	log.Printf("restored %s to %s", rel, id)
+	return nil
+}
 
+// Replace overwrites a save file with new contents (an edited save coming
+// back from a save editor, say), backing up the current file first.
+func (w *Watcher) Replace(rel string, data []byte, gameRunning bool) error {
+	if gameRunning {
+		return ErrGameRunning
+	}
+	if !w.isKnown(rel) {
+		return fmt.Errorf("unknown save %q", rel)
+	}
+	if err := w.replace(rel, data); err != nil {
+		return err
+	}
+	log.Printf("replaced %s with an uploaded save (%d bytes)", rel, len(data))
+	return nil
+}
+
+func (w *Watcher) replace(rel string, data []byte) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	current, err := os.ReadFile(w.abs(rel))
@@ -227,7 +250,6 @@ func (w *Watcher) Restore(rel, id string, gameRunning bool) error {
 	if err := writeAtomic(w.abs(rel), data); err != nil {
 		return err
 	}
-	log.Printf("restored %s to %s", rel, id)
 	return os.Chmod(w.abs(rel), 0o644)
 }
 

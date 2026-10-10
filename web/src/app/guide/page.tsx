@@ -109,7 +109,9 @@ export default function Guide() {
           <dt>Saves</dt>
           <dd>
             Every change to your save file is kept as a version. Download any version, or restore it: Tallgrass backs up the
-            current save first, and refuses while a game is running (the emulator would overwrite it on exit).
+            current save first, and refuses while a game is running (the emulator would overwrite it on exit). To move
+            Pokémon with a save editor such as OpenHome, download the latest version, edit it, and use{" "}
+            <strong>Upload edited save</strong>; it&apos;s checked and the current save is backed up first.
           </dd>
           <dt>Library</dt>
           <dd>Your ROMs by system, with whether Tallgrass supports each one and which have saves.</dd>

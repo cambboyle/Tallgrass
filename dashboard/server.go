@@ -413,6 +413,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/saves", s.handleSaves)
 	mux.HandleFunc("GET /api/saves/download", s.handleSaveDownload)
 	mux.HandleFunc("POST /api/saves/restore", s.handleSaveRestore)
+	mux.HandleFunc("POST /api/saves/upload", s.handleSaveUpload)
 	mux.HandleFunc("GET /api/saves/view", s.handleSaveView)
 	mux.HandleFunc("GET /api/boxes", s.handleBoxes)
 	mux.HandleFunc("POST /api/settings/nuzlocke", s.handleNuzlocke)

@@ -267,3 +267,4 @@ button.link { font: inherit; color: var(--text); background: none; border: 0; pa
 .pin-form input { font: inherit; font-size: 16px; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--text); }
 .pin-form .row { display: flex; gap: 8px; flex-wrap: wrap; }
 #account { display: grid; gap: 12px; }
+.save .top .actions { display: flex; flex-wrap: wrap; gap: 6px; }
