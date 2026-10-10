@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Set up Tallgrass</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <div class="brand"><h1>Set up</h1><nav><a href="/">Party</a><a href="box.html">Boxes</a><a href="trainers.html">Trainers</a><a href="saves.html">Saves</a><a href="library.html">Library</a><a href="account.html">Account</a><a href="setup.html" class="on">Setup</a></nav></div>
+  <div id="status"></div>
+</header>
+<div id="error"></div>
+<main id="setup" class="setup"></main>
+
+<script>
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+const SYSTEMS = { gba: "Game Boy Advance · RetroArch", nds: "Nintendo DS · DraStic" };
+const MARK = { ok: "✓", todo: "", wait: "…", fail: "!" };
+let timer = null;
+
+function pickHTML(v) {
+  return `<section class="stack-sm">
+    <h2>Which game are you playing?</h2>
+    <p class="sub">Tallgrass prepares just that game: it finds the ROM and save, checks the emulator, and confirms it can follow your game live.</p>
+    <div class="game-pick">${v.games.map((g) => `<button class="card game" data-game="${esc(g.slug)}">
+      <span class="name">${esc(g.name)}</span>
+      <span class="sub">${esc(SYSTEMS[g.system] || g.system)}</span>
+      ${g.version ? `<span class="sub">${esc(g.version)}</span>` : ""}
+    </button>`).join("")}</div>
+  </section>`;
+}
+
+function checksHTML(v) {
+  const steps = v.checks.map((c, i) => `<li class="step ${esc(c.status)}">
+    <span class="step-mark" aria-label="${esc(c.status)}">${MARK[c.status] ?? ""}</span>
+    <div class="body">
+      <div class="title">${i + 1}. ${esc(c.title)}</div>
+      <div class="sub">${esc(c.detail)}</div>
+      ${c.fix ? `<button class="btn primary" data-fix="${esc(c.fix)}">${esc(c.fixLabel || "Fix")}</button>` : ""}
+    </div>
+  </li>`).join("");
+  const done = v.done ? `<section class="card done-card">
+      <h3 class="panel-title">All set</h3>
+      <p>${esc(v.chosen.name)} is ready. Your party, route, journey and boxes update as you play.</p>
+      <p class="links"><a class="btn primary" href="/">Open the Party page</a> <a class="btn" href="box.html">Boxes</a></p>
+    </section>` : "";
+  return `${done}<section class="card">
+    <div class="top"><h3 class="panel-title">${esc(v.chosen.name)}</h3><button class="btn" data-game="">Change game</button></div>
+    <ol class="steps">${steps}</ol>
+    ${v.done ? "" : `<p class="sub">This page re-checks every few seconds.</p>`}
+  </section>`;
+}
+
+async function load() {
+  const res = await fetch("/api/setup");
+  if (!res.ok) {
+    document.getElementById("error").textContent = await res.text();
+    return;
+  }
+  const v = await res.json();
+  document.getElementById("error").textContent = "";
+  document.getElementById("status").textContent = !v.chosen ? "choose a game" : v.done ? "ready" : "in progress";
+  document.getElementById("setup").innerHTML = v.chosen ? checksHTML(v) : pickHTML(v);
+  clearTimeout(timer);
+  if (v.chosen && !v.done) timer = setTimeout(load, 3000);
+}
+
+const post = (path, body) => fetch(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+
+document.addEventListener("click", async (e) => {
+  const game = e.target.closest("[data-game]");
+  if (game) {
+    await post("/api/setup/game", { game: game.dataset.game });
+    load();
+    return;
+  }
+  const fix = e.target.closest("[data-fix]");
+  if (fix) {
+    fix.disabled = true;
+    fix.textContent = "Working…";
+    const res = await post("/api/setup/fix", { action: fix.dataset.fix });
+    if (!res.ok) document.getElementById("error").textContent = await res.text();
+    load();
+  }
+});
+load();
+</script>
+</body>
+</html>

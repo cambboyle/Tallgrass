@@ -8,7 +8,7 @@
 </head>
 <body>
 <header>
-  <div class="brand"><h1 id="game">Party</h1><nav><a href="/" class="on">Party</a><a href="box.html">Boxes</a><a href="trainers.html">Trainers</a><a href="saves.html">Saves</a><a href="library.html">Library</a><a href="account.html">Account</a></nav></div>
+  <div class="brand"><h1 id="game">Party</h1><nav><a href="/" class="on">Party</a><a href="box.html">Boxes</a><a href="trainers.html">Trainers</a><a href="saves.html">Saves</a><a href="library.html">Library</a><a href="account.html">Account</a><a href="setup.html">Setup</a></nav></div>
   <div id="status">connecting…</div>
 </header>
 <div id="error"></div>
@@ -249,6 +249,16 @@ document.addEventListener("click", (e) => {
   const t = e.target.closest("[data-open-species]");
   const rom = lastState?.running?.sha1?.slice(0, 12);
   if (t && rom) openSpecies(rom, Number(t.dataset.openSpecies));
+});
+
+// Until a game has been set up, point to the wizard.
+fetch("/api/setup").then((r) => (r.ok ? r.json() : null)).then((v) => {
+  if (!v || v.done) return;
+  const n = document.createElement("div");
+  n.className = "card notice setup-nudge";
+  n.innerHTML = v.chosen ? `Setup for ${esc(v.chosen.name)} isn't finished. <a href="setup.html">Continue setup</a>`
+    : `New here? <a href="setup.html">Set up Tallgrass for your game</a> in a couple of minutes.`;
+  document.getElementById("notice").before(n);
 });
 
 // EventSource reconnects on its own if the server restarts.

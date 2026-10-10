@@ -96,6 +96,8 @@ type Server struct {
 	lastPC   time.Time // when the tracker last read the PC
 
 	engine *tracker.Engine // nil unless EnableTracking was called
+	store  *tracker.Store  // settings and the run log; nil unless EnableTracking was called
+	setup  *setupState     // the setup wizard; nil when off
 	// A Nuzlocke toggle from the web, applied by the poller (the engine's
 	// only user); guarded by mu.
 	pendingNuzlocke *bool
@@ -418,6 +420,9 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/trainers", s.handleTrainers)
 	mux.HandleFunc("GET /api/export", s.handleExport)
 	mux.HandleFunc("GET /api/map", s.handleMap)
+	mux.HandleFunc("GET /api/setup", s.handleSetup)
+	mux.HandleFunc("POST /api/setup/game", s.handleSetupGame)
+	mux.HandleFunc("POST /api/setup/fix", s.handleSetupFix)
 	mux.HandleFunc("GET /api/cloud", s.handleCloud)
 	mux.HandleFunc("POST /api/cloud/link", s.handleCloudLink)
 	mux.HandleFunc("POST /api/cloud/unlink", s.handleCloudUnlink)

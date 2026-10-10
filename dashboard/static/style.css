@@ -97,7 +97,7 @@ td.max { font-weight: 700; color: var(--good); }
 
 /* Header nav and the Saves page */
 .brand { display: flex; align-items: baseline; gap: 16px; min-width: 0; }
-nav { display: flex; gap: 12px; font-size: 14px; }
+nav { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 14px; }
 nav a { color: var(--muted); text-decoration: none; }
 nav a.on { color: var(--text); font-weight: 600; }
 .saves { display: grid; gap: 12px; padding: 16px; align-items: start;
@@ -238,3 +238,23 @@ button.link { font: inherit; color: var(--text); background: none; border: 0; pa
 /* Account page */
 .pair-code { font: 600 34px/1.2 ui-monospace, Menlo, monospace; letter-spacing: .12em; margin: 8px 0 12px; }
 .btn.primary { background: var(--good); border-color: var(--good); color: #fff; }
+
+/* Setup wizard */
+.setup { grid-template-columns: minmax(0, 720px); }
+.stack-sm { display: grid; gap: 8px; }
+.stack-sm h2 { margin: 0; font-size: 20px; }
+.game-pick { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(min(200px, 100%), 1fr)); margin-top: 6px; }
+.card.game { display: grid; gap: 4px; text-align: left; cursor: pointer; font: inherit; color: var(--text); }
+.card.game:hover { border-color: var(--good); }
+.steps { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 12px; }
+.step { display: flex; gap: 12px; align-items: flex-start; }
+.step .step-mark { flex: none; width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--line); display: grid; place-items: center; font-size: 13px; font-weight: 700; }
+.step.ok .step-mark { background: var(--good); border-color: var(--good); color: #fff; }
+.step.fail .step-mark { border-color: var(--bad); color: var(--bad); }
+.step.wait .step-mark { border-style: dashed; color: var(--muted); }
+.step .body { display: grid; gap: 4px; min-width: 0; }
+.step .title { font-weight: 600; }
+.step .sub { overflow-wrap: anywhere; }
+.step .btn { justify-self: start; margin-top: 4px; }
+.done-card { border-color: var(--good); }
+.done-card .links { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }

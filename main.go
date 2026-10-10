@@ -31,6 +31,8 @@ func main() {
 	romsDir := flag.String("roms", "/home/pi/RetroPie/roms", "RetroPie ROMs folder whose save files get backed up")
 	backupDir := flag.String("backups", "backups", "where save file versions are kept")
 	drasticSaves := flag.String("drastic-saves", "/opt/retropie/configs/nds/drastic/backup", "DraStic's save folder (DS games)")
+	retropieConfigs := flag.String("retropie-configs", "/opt/retropie/configs", "RetroPie's config folder, for the setup wizard")
+	drasticDir := flag.String("drastic-dir", "/opt/retropie/emulators/drastic", "where DraStic is installed, for the setup wizard")
 	cloudURL := flag.String("cloud", cloud.DefaultURL, "Tallgrass backend (empty to turn accounts off)")
 	siteURL := flag.String("site", "https://tallgrass-delta.vercel.app", "Tallgrass website, where pairing codes are entered")
 	linkPath := flag.String("link-file", "cloud-link.json", "where this device's account key is kept")
@@ -111,6 +113,8 @@ func main() {
 	} else {
 		log.Printf("save backups off: %v", err)
 	}
+
+	dash.EnableSetup(*retropieConfigs, *drasticDir)
 
 	if *cloudURL != "" {
 		dash.EnableCloud(cloud.New(*cloudURL, cloud.DefaultAnonKey), *linkPath, *siteURL)

@@ -15,6 +15,7 @@ import (
 // EnableTracking turns on the Nuzlocke event log, stored in store. The
 // profile needs a trainer section to tell save files apart.
 func (s *Server) EnableTracking(store *tracker.Store) {
+	s.store = store
 	s.engine = tracker.NewEngine(store, s.prof.Name, s.nationalName)
 }
 
