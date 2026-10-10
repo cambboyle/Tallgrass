@@ -178,6 +178,13 @@ Also from ROM, via header pointers: front pics `0x08000128`, normal palettes `0x
 - **Evolution methods:** CFRU 16–28 are shared; later numbers differ per hack (`speciesData.evolutionScheme`). Megas list a no-item entry back to their base form (skipped).
 - Headless Chrome can't go narrower than 500px: check phone layouts with 390px iframes in a page served over HTTP (file:// pages can't load them).
 
+## Setup wizard
+
+- `dashboard/setup.go` + `static/setup.html` (`GET /api/setup`, `POST /api/setup/game`, `POST /api/setup/fix`). The three focus games are listed in `setupGames` with their ROM SHA-1s. The choice is saved as setting `setup.game` (game "").
+- Checks: ROM by SHA-1 in its system folder; GBA: `default = "lr-mgba"` in `configs/gba/emulators.cfg`, `network_cmd_enable` and `autosave_interval` (the GBA `retroarch.cfg` overrides `all/`); DS: DraStic installed, `/proc/sys/kernel/yama/ptrace_scope` absent or 0; the save (offers `.sav` → `.srm`, trimmed to 128 KB, old `.srm` kept as `.before-tallgrass-<time>`); live read (running ROM matches and the party was read).
+- Config edits keep the original as `<file>.bak-tallgrass` (once) and are refused while a game runs. Flags `-retropie-configs`, `-drastic-dir`.
+- Don't reuse the `.mark` class for new UI: route encounter tiles position it absolutely.
+
 ## Cloud (M4)
 
 - **Repo:** `git@github.com:cambboyle/Tallgrass.git` (private). Commit as Cameron Boyle <cambboyle@gmail.com> (repo-local config); **never add Claude attribution** to commits or PRs.

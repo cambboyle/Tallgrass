@@ -103,7 +103,7 @@ Launch supports three games, done properly: **Radical Red, HeartGold Generations
 
 ### M6: Consumer packaging
 - [ ] **Local web UI security:** password or pairing for the agent's web UI. Today anyone on the LAN can use it, including restore.
-- [ ] **Setup wizard, per game:** the user picks their game (Radical Red, HeartGold Generations or Unbound); the wizard finds that ROM by hash (or says which version it needs), finds its save, turns on what that emulator needs (RetroArch network commands and autosave, or checks DraStic), then asks them to load the game and confirms a live read. Only the chosen game is prepared.
+- [x] **Setup wizard, per game** (2026-10-10, tested against a fake RetroPie; live run on the Pi pending): the user picks their game (Radical Red, HeartGold Generations or Unbound); the wizard finds that ROM by hash (or says which version it needs), finds its save, turns on what that emulator needs (RetroArch network commands and autosave, or checks DraStic), then asks them to load the game and confirms a live read. Only the chosen game is prepared.
 - [ ] **Installers:** a RetroPie script module, a `.deb`, Batocera, Steam Deck (Flatpak or a desktop binary), plus Windows/macOS/Linux for desktop RetroArch.
 - [ ] **Self-update:** signed releases, with the agent updating itself.
 - [ ] **Docs:** install guides, a writing-a-profile guide, troubleshooting.
