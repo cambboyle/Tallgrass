@@ -2,6 +2,7 @@ package dashboard
 
 import (
 	"encoding/binary"
+	"errors"
 	"log"
 	"path/filepath"
 	"strings"
@@ -16,15 +17,16 @@ import (
 // dsLive follows a DS game in DraStic by reading the emulated DS's RAM from
 // DraStic's process. Only the poller touches it.
 type dsLive struct {
-	pid      int
-	mem      *emulator.ProcMem
-	data     *gen4.Data
-	general  uint32    // address of the live general save block; 0 = not found yet
-	lastScan time.Time // scans read 4 MB, so they're spaced out
-	misses   int       // failed reads in a row; many means the block moved
-	party    []*Member // last good read, shown when a read catches the game mid-update
-	trainer  string
-	trainID  uint32
+	pid       int
+	mem       *emulator.ProcMem
+	data      *gen4.Data
+	general   uint32    // address of the live general save block; 0 = not found yet
+	lastScan  time.Time // scans read 4 MB, so they're spaced out
+	lastCheck time.Time // last check that the block is still valid
+	misses    int       // failed reads in a row; many means the block moved
+	party     []*Member // last good read, shown when a read catches the game mid-update
+	trainer   string
+	trainID   uint32
 
 	locOffset  int // where the player's location record is in the general block; -1 unknown
 	location   *Location
@@ -63,8 +65,25 @@ func (s *Server) dsSnapshot(r *emulator.Running) State {
 			}
 		}
 	}
+	// The block found at startup can be a copy the game later reuses (it
+	// loads the save into a buffer for the title screen), so check now and
+	// then that it's still a valid general block.
+	if l.general != 0 && time.Since(l.lastCheck) > 10*time.Second {
+		l.lastCheck = time.Now()
+		layout := l.data.Layout
+		if b, err := l.mem.Read(l.general, layout.Party+6*gen4.PartySize); err == nil && !gen4.CheckGeneral(b, layout) {
+			l.misses++
+			if l.misses > 2 {
+				log.Printf("%s's save data moved; looking for it again", st.Game)
+				l.general, l.party, l.locOffset, l.misses = 0, nil, -1, 0
+			}
+		}
+	}
 	if l.general != 0 {
 		name, id, party, err := readLive(l)
+		if err == nil && len(party) == 0 {
+			err = errors.New("empty party") // there's always at least one: this isn't the live block
+		}
 		if err == nil {
 			l.misses, l.trainer, l.trainID = 0, name, id
 			l.party = l.party[:0]
@@ -74,9 +93,12 @@ func (s *Server) dsSnapshot(r *emulator.Running) State {
 				l.party = append(l.party, m)
 			}
 		} else if l.misses++; l.misses > 30 {
-			l.general, l.party = 0, nil // the game was probably reset: find the block again
+			l.general, l.party, l.locOffset = 0, nil, -1 // the game was probably reset: find the block again
 		}
 	}
+	s.mu.Lock()
+	s.dsAt.pid, s.dsAt.general = l.pid, l.general
+	s.mu.Unlock()
 	if l.party == nil {
 		st.Error = "Looking for your party in the game's memory…"
 		return st
@@ -225,4 +247,61 @@ func (s *Server) dsLocation(l *dsLive) (*Location, error) {
 		loc.Periods = append(loc.Periods, pv)
 	}
 	return loc, nil
+}
+
+// liveDSView reads the running DS game's PC straight from its RAM: the game
+// keeps the whole save there with the save file's layout, so the latest
+// save file says how big the blocks are and how far the PC is from the
+// live general block. It refuses (so the caller can fall back to the save
+// file) unless the RAM still looks like that save's data.
+func (s *Server) liveDSView() (*SaveView, error) {
+	running, _ := s.game()
+	if running == nil || running.Emulator != "drastic" || s.saves == nil {
+		return nil, errNotLive
+	}
+	s.mu.Lock()
+	pid, general := s.dsAt.pid, s.dsAt.general
+	s.mu.Unlock()
+	if general == 0 || pid != running.PID {
+		return nil, errors.New("still looking for the game's data in memory")
+	}
+	files := s.saves.SaveFor(running.ROM)
+	if len(files) == 0 {
+		return nil, errors.New("this game has no save yet")
+	}
+	data, err := s.saves.ReadCurrent(files[0])
+	if err != nil {
+		return nil, err
+	}
+	saved, err := gen4.ParseSave(data)
+	if err != nil {
+		return nil, err
+	}
+	d, err := s.dsData(running.ROM)
+	if err != nil {
+		return nil, err
+	}
+	mem, err := emulator.OpenProcMem("/proc", pid)
+	if err != nil {
+		return nil, err
+	}
+	defer mem.Close()
+	g, err := mem.Read(general, len(saved.General))
+	if err != nil {
+		return nil, err
+	}
+	st, err := mem.Read(general+uint32(saved.StorageOffset), len(saved.Storage))
+	if err != nil {
+		return nil, err
+	}
+	live := &gen4.Save{General: g, Storage: st, Counter: saved.Counter, StorageOffset: saved.StorageOffset}
+	if !gen4.CheckGeneral(g, d.Layout) || live.BoxName(d.Layout, 0) == "" || live.BoxName(d.Layout, 0) != saved.BoxName(d.Layout, 0) {
+		return nil, errors.New("the PC in memory doesn't match the save's layout")
+	}
+	view, err := s.dsSaveView(running.ROM, d, live)
+	if err != nil {
+		return nil, err
+	}
+	view.File, view.Version = files[0], "live"
+	return view, nil
 }

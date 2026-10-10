@@ -494,7 +494,15 @@ func (s *Server) handleBoxes(w http.ResponseWriter, r *http.Request) {
 	}
 	rc, err := s.liveROM()
 	if errors.Is(err, errNotLive) {
-		// DS games: PC boxes aren't read live yet, so show the latest save.
+		// DS games: read the PC from DraStic's memory, or failing that show
+		// the latest save.
+		if view, liveErr := s.liveDSView(); liveErr == nil {
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(view)
+			return
+		} else if !errors.Is(liveErr, errNotLive) {
+			log.Printf("live DS boxes: %v", liveErr)
+		}
 		if view, saveErr := s.latestSaveView(); saveErr == nil {
 			w.Header().Set("Content-Type", "application/json")
 			json.NewEncoder(w).Encode(view)

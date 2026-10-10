@@ -133,6 +133,12 @@ func (s *Server) dsView(file string, data []byte) (*SaveView, error) {
 	if err != nil {
 		return nil, err
 	}
+	return s.dsSaveView(rom, d, save)
+}
+
+// dsSaveView builds the box viewer's data from a Gen 4 save, read from a
+// file or from the running game's RAM.
+func (s *Server) dsSaveView(rom string, d *gen4.Data, save *gen4.Save) (*SaveView, error) {
 	l := d.Layout
 
 	v := &SaveView{Game: strings.TrimSuffix(filepath.Base(rom), filepath.Ext(rom)), Counter: save.Counter,

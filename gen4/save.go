@@ -23,15 +23,23 @@ const (
 type Save struct {
 	General, Storage []byte
 	Counter          uint32 // save counter of the general block
+	// StorageOffset is where the storage block starts relative to the
+	// general block. The game keeps the whole save in RAM with the same
+	// layout, so this finds the live PC from the live general block.
+	StorageOffset int
 }
 
 type block struct {
 	data    []byte
 	counter uint32
+	start   int // offset within its copy of the save (0x40000 per copy)
 }
 
 // ParseSave reads a raw save, or a DraStic/DeSmuME .dsv (the raw save plus
 // a 122-byte footer).
+// Each save holds two copies of every block, 0x40000 apart.
+const copySize = 0x40000
+
 func ParseSave(data []byte) (*Save, error) {
 	if len(data) < saveSize {
 		return nil, fmt.Errorf("save is %d bytes; a Gen 4 save is %d", len(data), saveSize)
@@ -56,7 +64,7 @@ func ParseSave(data []byte) (*Save, error) {
 			}
 			counter := le.Uint32(data[at-8:])
 			if b, ok := best[id]; !ok || counter > b.counter {
-				best[id] = block{data[start : start+size-footer], counter}
+				best[id] = block{data[start : start+size-footer], counter, start % copySize}
 			}
 			break
 		}
@@ -65,7 +73,9 @@ func ParseSave(data []byte) (*Save, error) {
 	if !ok {
 		return nil, errors.New("no valid Gen 4 save block found")
 	}
-	return &Save{General: general.data, Storage: best[1].data, Counter: general.counter}, nil
+	storage := best[1]
+	return &Save{General: general.data, Storage: storage.data, Counter: general.counter,
+		StorageOffset: storage.start - general.start}, nil
 }
 
 // crc16 is CRC16-CCITT (polynomial 0x1021, initial 0xFFFF).

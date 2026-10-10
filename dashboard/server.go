@@ -70,6 +70,12 @@ type Server struct {
 	info    *GameInfo
 	dsLive  *dsLive     // following a DS game in DraStic; poller only
 	cloud   *cloudState // account linking; nil when off
+	// Where the poller found the DS game's live save data, for handlers
+	// (they open their own reads of DraStic's memory). Guarded by mu.
+	dsAt struct {
+		pid     int
+		general uint32
+	}
 
 	mu      sync.Mutex
 	state   []byte        // latest State as JSON
