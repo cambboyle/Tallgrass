@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Analytics } from "@vercel/analytics/next";
 import { Bricolage_Grotesque, Instrument_Sans, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -39,9 +40,11 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           </div>
         </header>
         {children}
+        <Analytics />
         <footer className="footer">
           Tallgrass is a fan project, not affiliated with Nintendo, Game Freak or The Pokémon Company. Game data on this
-          site is read from the games themselves; no game files are hosted here.
+          site is read from the games themselves; no game files are hosted here. Visits are counted anonymously, without
+          cookies (Vercel Web Analytics).
         </footer>
       </body>
     </html>
