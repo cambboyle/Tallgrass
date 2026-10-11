@@ -78,9 +78,14 @@ func (s *Server) handleLibrary(w http.ResponseWriter, r *http.Request) {
 	if len(unhashed) > 0 {
 		s.hashInBackground(unhashed)
 	}
+	// Still hashing until the background run, which also writes the hash
+	// cache file, has finished.
+	s.mu.Lock()
+	hashing := len(unhashed) > 0 || s.libraryHashing
+	s.mu.Unlock()
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]any{"roms": roms, "hashing": len(unhashed) > 0})
+	json.NewEncoder(w).Encode(map[string]any{"roms": roms, "hashing": hashing})
 }
 
 // hashInBackground hashes ROMs unless a background run is already going.
