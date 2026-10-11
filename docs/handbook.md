@@ -2,11 +2,11 @@
 
 How Tallgrass fits together and how to do every routine job: developing, testing, releasing, running the website and backend, adding games, and finding data in a ROM. The other docs go deeper on single topics:
 
-- [releasing.md](releasing.md): the release workflow and the signing key
-- [writing-a-profile.md](writing-a-profile.md): adding a game (profile fields and how to find addresses)
-- [gamedata-export.md](gamedata-export.md): the game data export format the website reads
-- [../ROADMAP.md](../ROADMAP.md): what's planned, and the principles every feature follows
-- [../CLAUDE.md](../CLAUDE.md): the detailed technical notes (every address, format and gotcha found so far)
+- [Releasing](releasing.md): the release workflow and the signing key
+- [Writing a game profile](writing-a-profile.md): adding a game (profile fields and how to find addresses)
+- [Game data export format](gamedata-export.md): the game data export format the website reads
+- [Roadmap](../ROADMAP.md): what's planned, and the principles every feature follows
+- [Technical notes](../CLAUDE.md): the detailed technical notes (every address, format and gotcha found so far)
 
 ## Contents
 
@@ -32,19 +32,18 @@ How Tallgrass fits together and how to do every routine job: developing, testing
 ## 1. The pieces
 
 ```
- Raspberry Pi (RetroPie)                         Internet
-┌──────────────────────────────────┐   ┌──────────────────────────────────┐
-│ RetroArch ──UDP 55355──┐         │   │ GitHub: code, CI, releases       │
-│ DraStic  ──/proc/mem───┤         │   │   └ release binaries (signed)    │
-│ save files ────────────┤         │   │ Vercel: website                  │
-│ ROMs (read-only) ──────┤         │   │   tallgrass-delta.vercel.app     │
-│                ┌───────▼──────┐  │   │ Supabase: accounts, devices,     │
-│                │ tallgrass    │◄─┼───┤   profile registry, game data,   │
-│                │ (agent, Go)  │──┼──►│   cloud backups                  │
-│                └───────┬──────┘  │   └──────────────────────────────────┘
-│                 :8080 dashboard  │
-└────────────────────────┼─────────┘
-          phone / laptop browser;  computer running `tallgrass sync` (OpenHome)
+ Raspberry Pi (RetroPie)                        Internet
+ +------------------------------+              +-------------------------------+
+ | RetroArch (UDP 55355) ---+   |              | GitHub: code, CI, releases    |
+ | DraStic (process memory) +   |              | Vercel: the website           |
+ | save files --------------+   |   <------>   | Supabase: accounts, devices,  |
+ | ROMs (read only) --------+   |              |   profile registry, game      |
+ |                          v   |              |   data, cloud backups         |
+ |           tallgrass agent    |              +-------------------------------+
+ |           dashboard :8080    |
+ +--------------+---------------+
+                |
+   phone or laptop browser; a computer running `tallgrass sync` (OpenHome)
 ```
 
 | Piece | What it is | Where |
