@@ -26,10 +26,10 @@ function depends_tallgrass() {
 }
 
 function install_bin_tallgrass() {
-    local script="$__tmpdir/tallgrass-install.sh"
-    download "https://github.com/cambboyle/Tallgrass/releases/latest/download/install.sh" "$script" || return 1
-    TALLGRASS_USER="$user" bash "$script" || md_ret_errors+=("The Tallgrass installer failed")
-    rm -f "$script"
+    local tmp="$(mktemp -d)"
+    download "https://github.com/cambboyle/Tallgrass/releases/latest/download/install.sh" "$tmp/install.sh" || { rm -rf "$tmp"; return 1; }
+    TALLGRASS_USER="$user" bash "$tmp/install.sh" || md_ret_errors+=("The Tallgrass installer failed")
+    rm -rf "$tmp"
     # RetroPie-Setup counts a package as installed while this folder exists.
     mkdir -p "$md_inst"
     ln -sf "$home/tallgrass/tallgrass" "$md_inst/tallgrass"
