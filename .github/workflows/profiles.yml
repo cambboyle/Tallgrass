@@ -1,0 +1,36 @@
+# Copies profiles/*.json into the profile registry (Supabase game_profiles)
+# whenever they change on main, so agents pick up new and fixed profiles
+# without a new release.
+name: Profile registry
+
+on:
+  push:
+    branches: [main]
+    paths: ["profiles/*.json"]
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check every profile loads
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - run: go test ./profile
+      - name: Send profiles to the registry
+        env:
+          SECRET: ${{ secrets.PROFILES_SYNC_SECRET }}
+        run: |
+          python3 - > payload.json <<'PY'
+          import json, glob, os
+          out = []
+          for path in sorted(glob.glob("profiles/*.json")):
+              slug = os.path.basename(path)[:-5]
+              out.append({"slug": slug, "profile": json.load(open(path))})
+          print(json.dumps(out))
+          PY
+          curl -fsS -X POST "https://ifjlueqhuyaafjuzltoi.supabase.co/functions/v1/profiles-sync" \
+            -H "Content-Type: application/json" -H "X-Sync-Secret: $SECRET" \
+            --data-binary @payload.json

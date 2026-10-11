@@ -53,10 +53,11 @@ func main() {
 	}
 
 	if *exportROM != "" {
-		all, err := loadProfiles(*profilesDir)
+		bundled, local, err := loadProfiles(*profilesDir)
 		if err != nil {
 			log.Fatal(err)
 		}
+		all := append(local, bundled...)
 		gd, err := dashboard.New(all[0], nil).ExportFile(*exportROM, all)
 		if err != nil {
 			log.Fatal(err)
@@ -106,10 +107,11 @@ func main() {
 		log.Printf("logging events to %s", *dbPath)
 	}
 
-	all, err := loadProfiles(*profilesDir)
+	bundled, local, err := loadProfiles(*profilesDir)
 	if err != nil {
 		log.Fatal(err)
 	}
+	all := append(append([]*profile.Profile{}, local...), bundled...)
 	if emulator.Supported("/proc") {
 		dash.EnableDetection(func() (*emulator.Running, error) { return emulator.Detect("/proc") }, all)
 		log.Printf("following whichever game is running")
@@ -125,6 +127,11 @@ func main() {
 		log.Printf("backing up saves from %s to %s", *romsDir, *backupDir)
 	} else {
 		log.Printf("save backups off: %v", err)
+	}
+
+	if *cloudURL != "" {
+		// New and fixed profiles from the registry, without a new release.
+		dash.EnableRegistry(cloud.New(*cloudURL, cloud.DefaultAnonKey), "registry-profiles.json", version, local, bundled)
 	}
 
 	dash.EnableSetup(*retropieConfigs, *drasticDir)
@@ -200,15 +207,15 @@ func defaultESGamelists() string {
 	return home + "/.emulationstation/gamelists"
 }
 
-// loadProfiles is the bundled profiles plus any in dir, which win.
-func loadProfiles(dir string) ([]*profile.Profile, error) {
-	all, err := profile.All()
+// loadProfiles returns the bundled profiles and any in dir (which win).
+func loadProfiles(dir string) (bundled, local []*profile.Profile, err error) {
+	bundled, err = profile.All()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	all, errs := profile.WithLocal(all, dir)
+	all, errs := profile.WithLocal(nil, dir)
 	for _, err := range errs {
 		log.Printf("skipping a local profile: %v", err)
 	}
-	return all, nil
+	return bundled, all, nil
 }

@@ -16,3 +16,6 @@ verify_jwt = false
 
 [functions.gamedata-upload]
 verify_jwt = false
+
+[functions.profiles-sync]
+verify_jwt = false

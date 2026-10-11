@@ -16,6 +16,10 @@ import (
 type Profile struct {
 	Name       string `json:"name"`
 	Generation int    `json:"generation"`
+	// MinTallgrass is the oldest Tallgrass version that understands this
+	// profile, when it uses something added later (a new pokemonFormat, say).
+	// Older agents skip it rather than misread the game.
+	MinTallgrass string `json:"minTallgrass,omitempty"`
 
 	// SHA-1s of the ROM files this profile is for, to match save files to
 	// a profile without a running game.
@@ -340,14 +344,40 @@ func Load(path string) (*Profile, error) {
 		return nil, fmt.Errorf("loading profile %q: %w", path, err)
 	}
 
+	return Parse(raw, path)
+}
+
+// Parse reads a profile from JSON; source names it in errors.
+func Parse(raw []byte, source string) (*Profile, error) {
 	var p Profile
 	if err := json.Unmarshal(raw, &p); err != nil {
-		return nil, fmt.Errorf("%s: %w", path, err)
+		return nil, fmt.Errorf("%s: %w", source, err)
 	}
-
 	if p.PartyAddress == 0 || p.PartySlots == 0 || p.PokemonSize == 0 {
-		return nil, fmt.Errorf("%s: partyAddress, partySlots and pokemonSize are required", path)
+		return nil, fmt.Errorf("%s: partyAddress, partySlots and pokemonSize are required", source)
 	}
-
 	return &p, nil
+}
+
+// Supports reports whether a Tallgrass version can use this profile: one
+// that needs newer code says so in minTallgrass. Development builds
+// ("dev…") take every profile.
+func (p *Profile) Supports(version string) bool {
+	if p.MinTallgrass == "" || version == "" || strings.HasPrefix(version, "dev") {
+		return true
+	}
+	a, b := strings.Split(version, "."), strings.Split(p.MinTallgrass, ".")
+	for i := 0; i < max(len(a), len(b)); i++ {
+		var x, y int
+		if i < len(a) {
+			x, _ = strconv.Atoi(a[i])
+		}
+		if i < len(b) {
+			y, _ = strconv.Atoi(b[i])
+		}
+		if x != y {
+			return x > y
+		}
+	}
+	return true
 }

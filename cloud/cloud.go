@@ -152,3 +152,33 @@ func SaveLink(path string, l *Link) error {
 	}
 	return os.WriteFile(path, b, 0o600)
 }
+
+// GameProfile is one profile in the registry.
+type GameProfile struct {
+	Slug    string          `json:"slug"`
+	Version int             `json:"version"`
+	Profile json.RawMessage `json:"profile"`
+}
+
+// GameProfiles reads the profile registry (public, no account needed).
+func (c *Client) GameProfiles() ([]GameProfile, error) {
+	req, err := http.NewRequest(http.MethodGet, c.URL+"/rest/v1/game_profiles?select=slug,version,profile&order=slug", nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("apikey", c.AnonKey)
+	req.Header.Set("Authorization", "Bearer "+c.AnonKey)
+	res, err := c.HTTP.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+	if res.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("profile registry: HTTP %d", res.StatusCode)
+	}
+	var out []GameProfile
+	if err := json.NewDecoder(io.LimitReader(res.Body, 16<<20)).Decode(&out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}

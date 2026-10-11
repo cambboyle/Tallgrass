@@ -20,3 +20,15 @@ func TestWithLocal(t *testing.T) {
 		t.Errorf("missing folder: %d, %v", len(same), errs)
 	}
 }
+
+func TestSupports(t *testing.T) {
+	p := &Profile{MinTallgrass: "0.1.13"}
+	for v, want := range map[string]bool{"0.1.13": true, "0.1.20": true, "0.2.0": true, "0.1.9": false, "0.1.12": false, "dev-abc": true, "": true} {
+		if got := p.Supports(v); got != want {
+			t.Errorf("Supports(%q) = %v", v, got)
+		}
+	}
+	if !(&Profile{}).Supports("0.1.0") {
+		t.Error("a profile without minTallgrass works everywhere")
+	}
+}

@@ -94,7 +94,7 @@ Launch supports three games, done properly: **Radical Red, HeartGold Generations
   - [x] User guide at `/guide` (2026-10-11): install, setup wizard, dashboard tour, PIN, account linking, updates, troubleshooting, uninstall.
   - Curated guides and walkthroughs written in-site.
   - Links to a hack's official docs, with its author's permission where content is copied.
-- [ ] **Profile registry:** profiles published by ROM hash. The agent fetches profiles it doesn't have. Community submissions go through review.
+- [x] **Profile registry** (2026-10-11): `profiles/` on main is published to Supabase (`game_profiles`) by CI; agents download it every 6 h and apply without a restart; community submissions are reviewed as pull requests. `minTallgrass` keeps older agents from profiles they can't read.
 - [ ] **Optional sync:** save backups and the event log to the cloud.
 
 ### M5: Bank

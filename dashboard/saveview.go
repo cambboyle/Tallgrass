@@ -309,7 +309,7 @@ func (s *Server) saveHashes() {
 // or one generated from the ROM itself for FireRed-engine hacks; nil if
 // neither works.
 func (s *Server) profileFor(sum, path string) *profile.Profile {
-	for _, p := range s.profiles {
+	for _, p := range s.profileList() {
 		for _, want := range p.ROMSHA1 {
 			if want == sum {
 				return p

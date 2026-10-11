@@ -78,6 +78,7 @@ These are the methods used for Pokémon R.O.W.E., a decomp hack where almost not
 | Field | Meaning |
 |---|---|
 | `name` | The game's name, as shown everywhere. |
+| `minTallgrass` | Optional: the oldest Tallgrass version that understands this profile. |
 | `generation` | `3`. |
 | `romSha1` | SHA-1s of the ROMs this profile is for (the Library page shows them). |
 | `verified` | What's been checked against the real game: `rom` (tables decode), `save` (a real save parses), `live` (RAM addresses while playing). Don't claim what you haven't checked. |
@@ -176,5 +177,8 @@ For species pages and the website's game docs.
 Profiles are released into the public domain ([CC0](../profiles/LICENSE)), so anyone can use them. To add yours to Tallgrass:
 
 1. Make sure every section you include is right, and set `verified` honestly.
-2. Open a pull request adding the file to `profiles/`, with a note on how you checked it (which version of the hack, what you tested live).
-3. **Never include game data:** no ROM bytes, sprites, text or patches. A profile only says where things are; Tallgrass reads them from each player's own ROM.
+2. If the profile needs something added to Tallgrass recently (a new `pokemonFormat`, say), set `minTallgrass` to the first version that has it, so older installs skip the profile instead of misreading the game.
+3. Open a pull request adding the file to `profiles/`, with a note on how you checked it (which version of the hack, what you tested live).
+4. **Never include game data:** no ROM bytes, sprites, text or patches. A profile only says where things are; Tallgrass reads them from each player's own ROM.
+
+Once merged, the profile goes into the **profile registry**: every Tallgrass install downloads it within six hours (or on its next start), no new release needed. Fixes to existing profiles travel the same way.
