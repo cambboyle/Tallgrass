@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -295,6 +296,34 @@ func All() ([]*Profile, error) {
 		all = append(all, p)
 	}
 	return all, nil
+}
+
+// WithLocal adds the profiles in dir (*.json) in front of the bundled
+// ones, so a local file wins for the ROMs it lists: how a new profile is
+// tried out without rebuilding Tallgrass. Files that don't load are
+// returned as errors and skipped. A missing dir is fine.
+func WithLocal(bundled []*Profile, dir string) ([]*Profile, []error) {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return bundled, nil
+		}
+		return bundled, []error{err}
+	}
+	var local []*Profile
+	var errs []error
+	for _, e := range entries {
+		if e.IsDir() || !strings.HasSuffix(e.Name(), ".json") {
+			continue
+		}
+		p, err := Load(filepath.Join(dir, e.Name()))
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+		local = append(local, p)
+	}
+	return append(local, bundled...), errs
 }
 
 // Load reads a bundled profile by name ("radical-red"), or a profile file

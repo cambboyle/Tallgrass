@@ -162,8 +162,9 @@ export default function Guide() {
           <dt>&ldquo;Not supported&rdquo; for my game</dt>
           <dd>
             Tallgrass recognises games by their ROM fingerprint (SHA-1, shown on the Party page). A different version of a
-            hack has a different fingerprint. Only the versions on the <Link href="/games">games page</Link> are supported
-            for now.
+            hack has a different fingerprint. The versions on the <Link href="/games">games page</Link> are fully
+            supported; other FireRed hacks often work through auto-detection. To add a game yourself, see{" "}
+            <a href="https://github.com/cambboyle/Tallgrass/blob/main/docs/writing-a-profile.md">writing a game profile</a>.
           </dd>
           <dt>The party doesn&apos;t show, or stops updating</dt>
           <dd>

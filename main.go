@@ -36,6 +36,7 @@ func main() {
 	backupDir := flag.String("backups", "backups", "where save file versions are kept")
 	drasticSaves := flag.String("drastic-saves", "/opt/retropie/configs/nds/drastic/backup", "DraStic's save folder (DS games)")
 	retropieConfigs := flag.String("retropie-configs", "/opt/retropie/configs", "RetroPie's config folder, for the setup wizard")
+	profilesDir := flag.String("profiles-dir", "profiles", "folder of extra game profiles (*.json); they take priority over the built-in ones")
 	esGamelists := flag.String("es-gamelists", defaultESGamelists(), "EmulationStation's gamelists folder, for naming games in its menus")
 	drasticDir := flag.String("drastic-dir", "/opt/retropie/emulators/drastic", "where DraStic is installed, for the setup wizard")
 	authFile := flag.String("auth-file", "auth.json", "where the dashboard PIN (hashed) and sign-ins are kept; delete it to remove a forgotten PIN")
@@ -52,7 +53,7 @@ func main() {
 	}
 
 	if *exportROM != "" {
-		all, err := profile.All()
+		all, err := loadProfiles(*profilesDir)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -105,7 +106,7 @@ func main() {
 		log.Printf("logging events to %s", *dbPath)
 	}
 
-	all, err := profile.All()
+	all, err := loadProfiles(*profilesDir)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -197,4 +198,17 @@ func defaultESGamelists() string {
 		return ""
 	}
 	return home + "/.emulationstation/gamelists"
+}
+
+// loadProfiles is the bundled profiles plus any in dir, which win.
+func loadProfiles(dir string) ([]*profile.Profile, error) {
+	all, err := profile.All()
+	if err != nil {
+		return nil, err
+	}
+	all, errs := profile.WithLocal(all, dir)
+	for _, err := range errs {
+		log.Printf("skipping a local profile: %v", err)
+	}
+	return all, nil
 }

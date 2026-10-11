@@ -107,7 +107,7 @@ Launch supports three games, done properly: **Radical Red, HeartGold Generations
 - [x] **Setup wizard, per game** (2026-10-10; fixes tested against a fake RetroPie, checks verified on Cam's Pi for all three games): the user picks their game (Radical Red, HeartGold Generations or Unbound); the wizard finds that ROM by hash (or says which version it needs), finds its save, turns on what that emulator needs (RetroArch network commands and autosave, or checks DraStic), then asks them to load the game and confirms a live read. Only the chosen game is prepared.
 - [x] **Installer, first version** (2026-10-11): `curl … /install.sh | bash` for Raspberry Pi and Linux PCs (armv7, arm64, amd64), systemd service. Still to do: a RetroPie-Setup module, Batocera, Windows/macOS.
 - [x] **Self-update** (2026-10-11): Ed25519-signed checksums; Account → Updates installs and restarts. Public since v0.1.0 (2026-10-11); Cam's Pi installed it with the one-line installer.
-- [ ] **Docs:** install guides, a writing-a-profile guide, troubleshooting.
+- [x] **Docs** (2026-10-11): install and troubleshooting on the website's `/guide`; [writing a game profile](docs/writing-a-profile.md) with field reference and the techniques used for R.O.W.E.; local profiles folder (`-profiles-dir`, default `profiles`) to try one without rebuilding.
 - [x] **CI** (2026-10-11): GitHub Actions for tests and tagged releases. Still to do: a private test corpus of saves and ROM-derived fixtures, never published.
 - [ ] Cam's own Pi needs reflashing from Raspbian Buster (end of life) to a current OS at some point; this doubles as a test of the setup wizard.
 

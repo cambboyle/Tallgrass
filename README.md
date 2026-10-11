@@ -26,6 +26,7 @@ Then open `http://<your-pi>:8080/setup.html` and pick your game. Tallgrass keeps
 - `go test ./...`, `make deploy` (to the Pi in `Makefile`), `make run` (on a Mac, talking to the Pi).
 - `CLAUDE.md` has the detailed notes on game formats and the codebase; `ROADMAP.md` has the plan.
 - Releases: `docs/releasing.md`. Website: `web/README.md`.
+- Adding a game: [docs/writing-a-profile.md](docs/writing-a-profile.md). Try a profile without rebuilding by putting it in `~/tallgrass/profiles/`.
 
 ## Licence
 
