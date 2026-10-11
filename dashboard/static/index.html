@@ -130,8 +130,8 @@ function mapExtrasHTML(loc) {
   });
   if (v.trainerList?.length) {
     const rows = v.trainerList.map((t) => `<div class="rt"><b>${esc(t.class)} ${esc(t.name)}</b>${t.double ? ` <span class="pill">double</span>` : ""}
-      ${t.party.map((m) => `<span class="clickable" data-open-species="${m.species}" title="${esc(m.speciesName)} Lv ${m.level}">${v.sprites[m.species] ? `<img src="${v.sprites[m.species]}" alt="">` : esc(m.speciesName)}</span>`).join("")}
-      <span class="sub">Lv ${Math.max(...t.party.map((m) => m.level))}</span></div>`).join("");
+      ${t.party.map((m) => `<span class="clickable" data-open-species="${m.species}" title="${esc(m.speciesName)}${m.level ? ` Lv ${m.level}` : ""}">${v.sprites[m.species] ? `<img src="${v.sprites[m.species]}" alt="">` : esc(m.speciesName)}</span>`).join("")}
+      <span class="sub">${Math.max(...t.party.map((m) => m.level)) ? `Lv ${Math.max(...t.party.map((m) => m.level))}` : "Lv scales"}</span></div>`).join("");
     parts.push(`<div class="method"><h3>Trainers · <a href="trainers.html?rom=${rom}">all</a></h3><div class="route-trainers">${rows}</div></div>`);
   }
   return parts.length ? `<div class="map-extras">${parts.join("")}</div>` : "";
@@ -150,7 +150,7 @@ function routeHTML(loc) {
   const species = new Map();
   period.methods.forEach((m) => m.encounters.forEach((e) => species.set(e.species, e.caught)));
   const caught = [...species.values()].filter(Boolean).length;
-  const clock = loc.hour != null ? ` · ${hourLabel(loc.hour)}` : "";
+  const clock = loc.hour != null ? ` · ${hourLabel(loc.hour)}${period.swapped ? " (day and night swapped)" : ""}` : "";
   const legend = `<span class="legend"><span class="mark caught">✓</span>caught <span class="mark seen"></span>seen</span>`;
   const summary = `<div class="sub">${caught}/${species.size} caught${clock}${legend}</div>`;
 
@@ -163,7 +163,7 @@ function routeHTML(loc) {
       const lv = e.minLevel === e.maxLevel ? `Lv ${e.minLevel}` : `Lv ${e.minLevel}–${e.maxLevel}`;
       const tag = e.caught ? `<span class="mark caught" title="Caught">✓</span>` : e.seen ? `<span class="mark seen" title="Seen"></span>` : "";
       return `<div class="mon clickable" data-open-species="${e.species}" title="Species info">${e.sprite ? `<img src="${e.sprite}" alt="">` : ""}<div class="info">
-        <div class="n">${esc(e.name || `#${e.species}`)}</div><div class="d">${lv} · ${e.chance}%</div></div>${tag}</div>`;
+        <div class="n">${esc(e.name || `#${e.species}`)}</div><div class="d">${lv}${e.chance ? ` · ${e.chance}%` : ""}</div></div>${tag}</div>`;
     }).join("")}</div></div>`).join("");
 
   return head(summary) + tabs + methods + mapExtrasHTML(loc);

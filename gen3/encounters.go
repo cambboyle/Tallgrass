@@ -11,7 +11,7 @@ import (
 // header; Info picks land, water, rock smash and fishing from it.
 type WildHeader struct {
 	Group, Num uint8
-	Info       [4]uint32
+	Info       [5]uint32
 	Raw        []uint32
 }
 
@@ -21,10 +21,10 @@ type WildHeader struct {
 // rock smash, fishing, hidden and one more.
 type WildLayout struct {
 	HeaderSize int
-	Slots      [4]int
+	Slots      [5]int // land, water, rock smash, fishing, hidden (DexNav); -1 for none
 }
 
-var vanillaWild = WildLayout{HeaderSize: 20, Slots: [4]int{0, 1, 2, 3}}
+var vanillaWild = WildLayout{HeaderSize: 20, Slots: [5]int{0, 1, 2, 3, -1}}
 
 // Methods, in the order of WildHeader.Info, with each slot's chance in
 // percent. Fishing shares one list of 10 slots across the three rods.
@@ -40,9 +40,12 @@ var methods = []struct {
 	{"Old Rod", 3, 0, []int{70, 30}},
 	{"Good Rod", 3, 2, []int{60, 20, 20}},
 	{"Super Rod", 3, 5, []int{40, 40, 15, 4, 1}},
+	// DexNav's hidden Pokémon (decomp hacks): the game's odds per slot
+	// aren't known, so chances are left at 0.
+	{"Hidden (DexNav)", 4, 0, []int{0, 0, 0}},
 }
 
-var slotCounts = [4]int{12, 5, 5, 10}
+var slotCounts = [5]int{12, 5, 5, 10, 3}
 
 // Encounter is one species for one method, with its slots merged.
 type Encounter struct {
@@ -163,13 +166,13 @@ func (w *Wild) ForMap(group, num uint8) ([]PeriodEncounters, error) {
 
 // info picks land, water, rock smash and fishing out of a header's
 // pointers; landSlot (if 0 or more) overrides where land comes from.
-func (w *Wild) info(raw []uint32, landSlot int) [4]uint32 {
-	var info [4]uint32
+func (w *Wild) info(raw []uint32, landSlot int) [5]uint32 {
+	var info [5]uint32
 	for i, slot := range w.layout.Slots {
 		if i == 0 && landSlot >= 0 {
 			slot = landSlot
 		}
-		if slot < len(raw) {
+		if slot >= 0 && slot < len(raw) {
 			info[i] = raw[slot]
 		}
 	}
@@ -220,7 +223,7 @@ func readWildHeaders(read ReadMemory, addr uint32, l WildLayout) ([]WildHeader, 
 				h.Raw = append(h.Raw, binary.LittleEndian.Uint32(e[j:]))
 			}
 			for j, slot := range l.Slots {
-				if slot < len(h.Raw) {
+				if slot >= 0 && slot < len(h.Raw) {
 					h.Info[j] = h.Raw[slot]
 				}
 			}
@@ -234,8 +237,8 @@ func readWildHeaders(read ReadMemory, addr uint32, l WildLayout) ([]WildHeader, 
 
 // readMethods reads each encounter list (an encounter rate byte, then a
 // pointer to slots of min level, max level, species).
-func (w *Wild) readMethods(info [4]uint32) ([]MethodEncounters, error) {
-	var slots [4][]byte
+func (w *Wild) readMethods(info [5]uint32) ([]MethodEncounters, error) {
+	var slots [5][]byte
 	for i, ptr := range info {
 		if ptr == 0 {
 			continue
@@ -244,7 +247,7 @@ func (w *Wild) readMethods(info [4]uint32) ([]MethodEncounters, error) {
 		if err != nil {
 			return nil, err
 		}
-		if hdr[0] == 0 { // encounter rate 0: never happens
+		if hdr[0] == 0 && i != 4 { // encounter rate 0: never happens (hidden lists always say 0)
 			continue
 		}
 		slots[i], err = w.read(binary.LittleEndian.Uint32(hdr[4:]), slotCounts[i]*4)

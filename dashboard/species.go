@@ -171,8 +171,8 @@ func (rc *romContext) buildIndexes() {
 // speciesCount is one past the last species ID: from the profile, or
 // where names run out (or turn to junk). Call with rc.mu held.
 func (rc *romContext) speciesCount() int {
-	if n := rc.prof.SpeciesData.SpeciesCount; n != 0 {
-		return n
+	if sd := rc.prof.SpeciesData; sd != nil && sd.SpeciesCount != 0 {
+		return sd.SpeciesCount
 	}
 	if rc.maxSpecies == 0 {
 		rc.maxSpecies = 1

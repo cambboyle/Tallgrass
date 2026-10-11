@@ -22,6 +22,7 @@ type PeriodView struct {
 	FromHour int          `json:"fromHour"`
 	ToHour   int          `json:"toHour"`
 	Active   bool         `json:"active"`
+	Swapped  bool         `json:"swapped,omitempty"` // the game's option swapping day and night is on
 	Methods  []MethodView `json:"methods"`
 }
 
@@ -90,12 +91,20 @@ func (s *Server) location(seen, caught []byte) (*Location, error) {
 		loc.Hour = &hour
 	}
 
+	swapped := false
+	if f := s.prof.WildEncounters.SwapFlag; f != 0 && len(periods) == 2 {
+		swapped, err = s.flag(int(f))
+		if err != nil {
+			return nil, err
+		}
+	}
 	for _, p := range periods {
 		pv := PeriodView{
 			Name:     p.Name,
 			FromHour: p.FromHour,
 			ToHour:   p.ToHour,
-			Active:   len(periods) == 1 || (loc.Hour != nil && p.Contains(*loc.Hour)),
+			Active:   len(periods) == 1 || (loc.Hour != nil && p.Contains(*loc.Hour) != swapped),
+			Swapped:  swapped,
 		}
 		for _, m := range p.Methods {
 			mv := MethodView{Method: m.Method}
@@ -107,6 +116,22 @@ func (s *Server) location(seen, caught []byte) (*Location, error) {
 		loc.Periods = append(loc.Periods, pv)
 	}
 	return loc, nil
+}
+
+// flag reads one of the game's flags; false if the profile has no flags.
+func (s *Server) flag(n int) (bool, error) {
+	if s.prof.Flags.IsZero() {
+		return false, nil
+	}
+	addr, err := s.prof.Flags.Resolve(s.read)
+	if err != nil {
+		return false, err
+	}
+	b, err := s.read(addr+uint32(n/8), 1)
+	if err != nil {
+		return false, err
+	}
+	return b[0]>>(n%8)&1 != 0, nil
 }
 
 // mapName names a region map section; "" if the profile has no location.
@@ -158,8 +183,10 @@ func newWild(read gen3.ReadMemory, cfg *profile.WildEncounters) (*gen3.Wild, err
 		periods = append(periods, gen3.Period{Name: p.Name, Headers: addr, FromHour: p.FromHour, ToHour: p.ToHour, LandSlot: land})
 	}
 	w := gen3.NewWild(read, main, periods)
-	if cfg.HeaderSize > 0 && len(cfg.Slots) == 4 {
-		w.WithLayout(gen3.WildLayout{HeaderSize: cfg.HeaderSize, Slots: [4]int(cfg.Slots)})
+	if cfg.HeaderSize > 0 && (len(cfg.Slots) == 4 || len(cfg.Slots) == 5) {
+		l := gen3.WildLayout{HeaderSize: cfg.HeaderSize, Slots: [5]int{-1, -1, -1, -1, -1}}
+		copy(l.Slots[:], cfg.Slots)
+		w.WithLayout(l)
 	}
 	return w, nil
 }

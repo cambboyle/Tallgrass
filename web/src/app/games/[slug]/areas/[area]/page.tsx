@@ -60,7 +60,7 @@ export default async function AreaPage({ params }: PageProps<"/games/[slug]/area
                     <td><Link href={`/games/${slug}/pokemon/${e.species}`}>{e.name}</Link></td>
                     <td className="small">{e.when || "Any time"}</td>
                     <td className="num">{e.minLevel === e.maxLevel ? e.minLevel : `${e.minLevel}–${e.maxLevel}`}</td>
-                    <td className="num">{e.chance}%</td>
+                    <td className="num">{e.chance ? `${e.chance}%` : "–"}</td>
                   </tr>
                 ))}
               </tbody>

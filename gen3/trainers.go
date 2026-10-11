@@ -3,6 +3,7 @@ package gen3
 import (
 	"encoding/binary"
 	"fmt"
+	"slices"
 	"strings"
 )
 
@@ -11,7 +12,8 @@ import (
 type TrainerTables struct {
 	Trainers     uint32
 	ClassNames   uint32
-	ClassNameLen int // 13
+	ClassNameLen int    // 13
+	Format       string // "" (vanilla/CFRU) or "rowe" (see allROWE)
 }
 
 // Trainer is one trainer battle as the docs show it.
@@ -30,7 +32,7 @@ type Trainer struct {
 type TrainerMon struct {
 	Species     int      `json:"species"`
 	SpeciesName string   `json:"speciesName"`
-	Level       int      `json:"level"`
+	Level       int      `json:"level"` // 0 when the game sets it at battle time (scales with the player)
 	Item        string   `json:"item,omitempty"`
 	Moves       []string `json:"moves,omitempty"` // empty: its level-up moves
 }
@@ -46,6 +48,9 @@ const (
 // All reads every trainer. Trainer 0 is a blank placeholder; the
 // table ends at the first entry that doesn't look like a trainer.
 func (t TrainerTables) All(read ReadMemory, names *Names) ([]Trainer, error) {
+	if t.Format == "rowe" {
+		return t.allROWE(read, names)
+	}
 	le := binary.LittleEndian
 	var out []Trainer
 	for id := 1; id < 4096; id++ {
@@ -146,4 +151,70 @@ func scriptTrainers(read ReadMemory, script uint32) []int {
 		}
 	}
 	return ids
+}
+
+// allROWE reads Pokémon R.O.W.E.'s trainers: 64-byte records (flags,
+// class, music, pic, name[12] at 4, items from 0x16, AI at 0x24, party
+// pointer at 0x28, party size at 0x3C; a second, harder party at 0x38 is
+// left out). Party entries are 40 bytes: a level byte the game replaces
+// with a scaled level at battle time, species at 0xA, held item at 0xE,
+// and a pool of up to six moves from 0x12 that the game picks from.
+func (t TrainerTables) allROWE(read ReadMemory, names *Names) ([]Trainer, error) {
+	const size, entry = 64, 40
+	le := binary.LittleEndian
+	var out []Trainer
+	for id := 1; id < 4096; id++ {
+		e, err := read(t.Trainers+uint32(id*size), size)
+		if err != nil {
+			break
+		}
+		class, count, party := int(e[1]), int(e[0x3C]), le.Uint32(e[0x28:])
+		if e[0] > 0x0F || count > 6 || (count > 0 && !isROMPointer(party)) {
+			break
+		}
+		if count == 0 {
+			continue
+		}
+		tr := Trainer{ID: id, Party: []TrainerMon{}}
+		tr.Class, _ = ReadName(read, t.ClassNames+uint32(class*t.ClassNameLen), t.ClassNameLen)
+		tr.Class = strings.NewReplacer("PKMN", "Pokémon", "Pkmn", "Pokémon").Replace(tr.Class)
+		tr.Name = TitleCase(DecodeText(e[4:16]))
+		for i := 0; i < 4; i++ {
+			if item := int(le.Uint16(e[0x16+i*2:])); item != 0 {
+				if name, _ := names.Item(item); name != "" && !strings.Contains(name, "?") {
+					tr.Items = append(tr.Items, name)
+				}
+			}
+		}
+		b, err := read(party, count*entry)
+		if err != nil {
+			return nil, fmt.Errorf("trainer %d's party: %w", id, err)
+		}
+		for i := 0; i < count; i++ {
+			p := b[i*entry:]
+			m := TrainerMon{Species: int(le.Uint16(p[0xA:]))}
+			if m.Species == 0 {
+				continue
+			}
+			m.SpeciesName, _ = names.Species(m.Species)
+			if item := int(le.Uint16(p[0xE:])); item != 0 {
+				if name, _ := names.Item(item); !strings.Contains(name, "?") {
+					m.Item = name
+				}
+			}
+			for k := 0; k < 6; k++ {
+				if mv := int(le.Uint16(p[0x12+k*2:])); mv != 0 {
+					name, _ := names.Move(mv)
+					if !slices.Contains(m.Moves, name) {
+						m.Moves = append(m.Moves, name)
+					}
+				}
+			}
+			tr.Party = append(tr.Party, m)
+		}
+		if len(tr.Party) > 0 {
+			out = append(out, tr)
+		}
+	}
+	return out, nil
 }

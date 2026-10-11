@@ -96,7 +96,7 @@ export default async function SpeciesPage({ params }: PageProps<"/games/[slug]/p
                       <td>{f.method}</td>
                       <td className="small">{f.when || "Any time"}</td>
                       <td className="num">{f.minLevel === f.maxLevel ? f.minLevel : `${f.minLevel}–${f.maxLevel}`}</td>
-                      <td className="num">{f.chance}%</td>
+                      <td className="num">{f.chance ? `${f.chance}%` : "–"}</td>
                     </tr>
                   ))}
                 </tbody>

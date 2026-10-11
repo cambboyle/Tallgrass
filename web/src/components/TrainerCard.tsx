@@ -15,7 +15,7 @@ export default function TrainerCard({ slug, t }: { slug: string; t: Trainer }) {
             {t.party.map((m, i) => (
               <tr key={i}>
                 <td style={{ width: "30%" }}><Link href={`/games/${slug}/pokemon/${m.species}`}>{m.speciesName}</Link></td>
-                <td className="num" style={{ width: 70 }}>Lv {m.level}</td>
+                <td className="num" style={{ width: 70 }}>{m.level ? `Lv ${m.level}` : "Scales"}</td>
                 <td className="small">{m.item && <span className="muted">@ {m.item}</span>}{m.item && m.moves?.length ? " · " : ""}{m.moves?.join(", ")}</td>
               </tr>
             ))}

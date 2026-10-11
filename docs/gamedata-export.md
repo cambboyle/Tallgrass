@@ -37,7 +37,7 @@ Only facts read from the user's own ROM are included: numbers, names and lists. 
 | `name`, `types`, `abilities`, `hiddenAbility` | As the game names them. |
 | `baseStats` | `hp`, `attack`, `defense`, `speed`, `spAtk`, `spDef`. |
 | `evolvesTo`, `evolvesFrom` | `{species, name, how}`; `how` is readable text ("Level 16", "Use Fire Stone"). |
-| `foundIn` | `{area, method, when, minLevel, maxLevel, chance}`. `when` is a time of day, or empty for all day. **Missing (null)** means this game's maps can't be read yet (Platinum); an empty list means not found in the wild. |
+| `foundIn` | `{area, method, when, minLevel, maxLevel, chance}`. `when` is a time of day, or empty for all day. `chance` is 0 where the game's odds aren't known (method "Hidden (DexNav)"). **Missing (null)** means this game's maps can't be read yet (Platinum); an empty list means not found in the wild. |
 | `levelMoves` | `{level, move}`; level 0 means "on evolution". |
 | `tmMoves` | `{machine, move}`, e.g. `{"machine": "HM03", "move": "Surf"}`. |
 | `tutorMoves`, `eggMoves` | Move names. |
@@ -52,7 +52,7 @@ Unused species slots (blank or placeholder names) are left out.
 | `class`, `name` | E.g. "Leader", "Brock". |
 | `double` | A double battle. |
 | `items` | Items the trainer uses in battle. |
-| `party` | `{species, speciesName, level, item, moves}`. Empty `moves` means the Pokémon uses its level-up moves. |
+| `party` | `{species, speciesName, level, item, moves}`. Empty `moves` means the Pokémon uses its level-up moves. `level` 0 means the game sets it when the battle starts (R.O.W.E. scales trainers to the player); there `moves` is a pool of up to six the game picks from. |
 | `areas`, `maps` | Where the trainer is battled, as area names and map IDs. Absent when unknown (battle facilities, some scripted fights, rematch-only teams). |
 
 ### Map

@@ -36,7 +36,8 @@
       0,
       2,
       3,
-      4
+      4,
+      5
     ],
     "clockHour": "0x03004ADA",
     "periods": [
@@ -52,7 +53,8 @@
         "fromHour": 18,
         "toHour": 6
       }
-    ]
+    ],
+    "swapFlag": "0x470"
   },
   "pokedex": {
     "caught": "[0x03004B7C]+0x33DC",
@@ -90,5 +92,12 @@
     "baseStatsSize": 64,
     "growthOffset": 27,
     "sharedGrowthSpecies": 10
+  },
+  "flags": "[0x03004B7C]+0x1754",
+  "trainers": {
+    "table": "[0x08039174]",
+    "classNames": "[0x080187FC]",
+    "classNameLength": 13,
+    "format": "rowe"
   }
 }

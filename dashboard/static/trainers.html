@@ -32,7 +32,7 @@ function monHTML(m) {
   const details = [m.item ? `@ ${esc(m.item)}` : "", (m.moves || []).map(esc).join(", ")].filter(Boolean).join(" · ");
   return `<div class="tmon clickable" data-open-species="${m.species}" title="Species info">
     ${sprite ? `<img src="${sprite}" alt="" loading="lazy">` : ""}
-    <div class="info"><div class="n">${esc(m.speciesName)} <span class="lv">Lv ${m.level}</span></div>
+    <div class="info"><div class="n">${esc(m.speciesName)} <span class="lv">${m.level ? `Lv ${m.level}` : "Lv scales"}</span></div>
     ${details ? `<div class="d">${details}</div>` : ""}</div></div>`;
 }
 

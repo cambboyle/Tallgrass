@@ -47,6 +47,8 @@ type Profile struct {
 	// gen3.DecodeROWE). FormSpecies, if set, maps species + form to the
 	// form's own species ID (gen3.ResolveForm).
 	PokemonFormat string `json:"pokemonFormat"`
+	// Flags is the game's flag array (flag n = bit n%8 of byte n/8).
+	Flags Ref `json:"flags"`
 	FormSpecies   Addr   `json:"formSpecies"`
 
 	// Optional; leave out to skip that dashboard section.
@@ -63,9 +65,10 @@ type Profile struct {
 // TrainerData locates trainer battles (gTrainers, 40 bytes each) and
 // trainer class names, for the docs and the Route section.
 type TrainerData struct {
-	Table           Ref `json:"table"`
-	ClassNames      Ref `json:"classNames"`
-	ClassNameLength int `json:"classNameLength"` // 13
+	Table           Ref    `json:"table"`
+	ClassNames      Ref    `json:"classNames"`
+	ClassNameLength int    `json:"classNameLength"` // 13
+	Format          string `json:"format"`          // "" or "rowe" (gen3.TrainerTables)
 }
 
 // SpeciesData locates what a species page shows (base stats come from
@@ -199,9 +202,13 @@ type WildEncounters struct {
 	ClockHour Ref      `json:"clockHour"` // RTC hour byte, needed for periods
 	Periods   []Period `json:"periods"`   // time-of-day tables, if the game has them
 	// HeaderSize and Slots describe non-vanilla headers: bytes per header
-	// (20 if unset) and which pointer is land, water, rock smash, fishing.
+	// (20 if unset) and which pointer is land, water, rock smash, fishing
+	// and (optionally) DexNav's hidden Pokémon.
 	HeaderSize int   `json:"headerSize"`
 	Slots      []int `json:"slots"`
+	// SwapFlag is a game flag that swaps the time-of-day periods (ROWE's
+	// reversed day and night option); needs the profile's Flags.
+	SwapFlag Addr `json:"swapFlag"`
 }
 
 type Period struct {

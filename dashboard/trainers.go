@@ -123,7 +123,7 @@ func (rc *romContext) buildTrainers() error {
 	if err != nil {
 		return err
 	}
-	list, err := gen3.TrainerTables{Trainers: table, ClassNames: classes, ClassNameLen: td.ClassNameLength}.All(read, rc.names)
+	list, err := gen3.TrainerTables{Trainers: table, ClassNames: classes, ClassNameLen: td.ClassNameLength, Format: td.Format}.All(read, rc.names)
 	if err != nil {
 		return err
 	}
