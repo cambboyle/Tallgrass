@@ -7,7 +7,7 @@ git tag v0.1.0
 git push origin v0.1.0
 ```
 
-The workflow tests, builds `tallgrass-linux-armv7` (Raspberry Pi, 32-bit OS), `tallgrass-linux-arm64` (64-bit Pi OS) and `tallgrass-linux-amd64` (PCs, Steam Deck desktop), writes `SHA256SUMS`, signs it as `SHA256SUMS.sig`, and publishes a GitHub release with notes generated from the commits.
+The workflow tests, builds `tallgrass-linux-armv7` (Raspberry Pi, 32-bit OS), `tallgrass-linux-arm64` (64-bit Pi OS), `tallgrass-linux-amd64` (PCs, Steam Deck desktop) and macOS/Windows builds (`darwin-arm64`, `darwin-amd64`, `windows-amd64.exe`, for `tallgrass sync`), writes `SHA256SUMS`, signs it as `SHA256SUMS.sig`, and publishes a GitHub release with notes generated from the commits.
 
 ## The signing key
 

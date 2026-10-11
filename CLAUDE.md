@@ -197,6 +197,11 @@ Also from ROM, via header pointers: front pics `0x08000128`, normal palettes `0x
 - ROM-backed tests (Route 1 day/night, map names, an end-to-end dashboard test with fake RAM) skip unless `TALLGRASS_ROM` points at the Radical Red ROM; the real-save test also needs `TALLGRASS_SAVE` (a Radical Red `.srm`). Copy it locally (`scp` from the Pi path above, outside the repo) and run `TALLGRASS_ROM=/path/to/rr.gba go test ./...`.
 - For poking at ROM code, Python `capstone` (Thumb mode) works well; nothing in the repo depends on it.
 
+## Handbook and RetroPie module
+
+- `docs/handbook.md` is the process guide (pieces, dev/test/release, website, Supabase, cloud, profiles, reverse-engineering methods, secrets, troubleshooting, checklists). Keep it in step when a process changes.
+- RetroPie-Setup module: `web/public/retropie/tallgrass.sh` (served at `/retropie/tallgrass.sh`; users put it in `~/RetroPie-Setup/ext/tallgrass/scriptmodules/supplementary/`). `install_bin` runs the release's `install.sh` as root with `TALLGRASS_USER=$user` (install.sh then chowns the binary and writes `User=` for that user) and makes `$md_inst` (`/opt/retropie/supplementary/tallgrass`, a symlink to the binary) so RetroPie-Setup sees it installed; `remove` keeps `~/tallgrass` data. Verified on Cam's Pi 2026-10-11 (left installed there).
+
 ## Deploying to the Pi
 
 - **Since 2026-10-11 the Pi runs public releases** (installed with `install.sh`, updates itself from Account → Updates). `make deploy` still works for testing unreleased changes, but it puts a `dev-<commit>` build on the Pi, which stops self-updates until the next release is installed (re-run the installer, or tag a release).
