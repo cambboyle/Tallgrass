@@ -145,6 +145,7 @@ func main() {
 
 	if *cloudURL != "" {
 		dash.EnableCloud(cloud.New(*cloudURL, cloud.DefaultAnonKey), *linkPath, *siteURL)
+		dash.EnableCloudSync("cloud-sync.json")
 	}
 
 	go dash.Poll(*interval)

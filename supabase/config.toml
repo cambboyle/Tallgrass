@@ -19,3 +19,6 @@ verify_jwt = false
 
 [functions.profiles-sync]
 verify_jwt = false
+
+[functions.backup-upload]
+verify_jwt = false

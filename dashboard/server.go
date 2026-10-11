@@ -476,6 +476,8 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/cloud", s.handleCloud)
 	mux.HandleFunc("POST /api/cloud/link", s.handleCloudLink)
 	mux.HandleFunc("POST /api/cloud/unlink", s.handleCloudUnlink)
+	mux.HandleFunc("GET /api/cloud/sync", s.handleCloudSync)
+	mux.HandleFunc("POST /api/cloud/sync", s.handleCloudSync)
 	mux.HandleFunc("POST /api/cloud/upload", s.handleCloudUpload)
 	mux.HandleFunc("GET /api/saves/sprite", s.handleROMSprite)
 	return s.protect(mux)

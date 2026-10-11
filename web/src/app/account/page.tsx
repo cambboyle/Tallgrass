@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import UnlinkButton from "@/components/UnlinkButton";
 import SignOutButton from "@/components/SignOutButton";
+import CloudBackups from "@/components/CloudBackups";
 
 export const metadata = { title: "Account" };
 
@@ -48,6 +49,7 @@ export default async function Account() {
           </div>
         )}
       </section>
+      {devices?.length ? <CloudBackups supabase={supabase} userId={user.id} devices={devices} /> : null}
       <div><SignOutButton /></div>
     </main>
   );

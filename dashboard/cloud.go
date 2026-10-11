@@ -23,6 +23,8 @@ type cloudState struct {
 	pairErr  string
 	device   *cloud.Device // last answer from the server
 	deviceAt time.Time
+
+	sync *syncState // cloud backups; nil until EnableCloudSync
 }
 
 // EnableCloud turns on account linking. linkPath stores the device key.

@@ -36,6 +36,12 @@ function html(v) {
       <p>This device (<b>${esc(v.device.name)}</b>) is linked to <b>${who}</b>${v.device.account.isMaintainer ? ` <span class="pill ok">maintainer</span>` : ""}.</p>
       <p class="sub">Manage your devices at <a href="${esc(v.siteUrl)}/account">${esc(v.siteUrl.replace(/^https?:\/\//, ""))}/account</a>.</p>
       <p style="margin-top:12px"><button class="btn" id="unlink">Unlink this device</button></p>
+    </section>
+    <section class="card" id="sync-card">
+      <h3 class="panel-title">Cloud backups</h3>
+      <label class="toggle"><input type="checkbox" id="sync-on"> Back up my saves and Journey to my account</label>
+      <p class="sub">Every save backup is copied to your account (the newest 30 versions of each save are kept) along with your Journey history. Download them at <a href="${esc(v.siteUrl)}/account">${esc(v.siteUrl.replace(/^https?:\/\//, ""))}/account</a>. Only you can see them.</p>
+      <p class="sub" id="sync-status"></p>
     </section>`;
   }
   if (v.pairing) {
@@ -65,6 +71,7 @@ async function load() {
   document.getElementById("error").textContent = v.error || "";
   document.getElementById("status").textContent = v.linked ? "linked" : v.pairing ? "waiting for code" : "not linked";
   document.getElementById("account").innerHTML = html(v);
+  if (v.linked) loadSync();
   clearTimeout(timer);
   if (v.pairing) timer = setTimeout(load, 3000);
 }
@@ -84,6 +91,27 @@ document.addEventListener("click", async (e) => {
   }
 });
 load();
+
+// Cloud backups: on/off and the last sync.
+async function loadSync() {
+  const res = await fetch("/api/cloud/sync");
+  const card = document.getElementById("sync-card");
+  if (!card) return;
+  if (!res.ok) { card.hidden = true; return; }
+  const v = await res.json();
+  document.getElementById("sync-on").checked = v.enabled;
+  const when = v.lastAt ? new Date(v.lastAt).toLocaleString([], { dateStyle: "medium", timeStyle: "short" }) : "";
+  document.getElementById("sync-status").textContent = !v.enabled ? "Off." :
+    v.error ? `Last attempt failed: ${v.error}` :
+    when ? `On. Last synced ${when}; ${v.sent} save version${v.sent === 1 ? "" : "s"} uploaded so far. Checks every 10 minutes.` :
+    "On. The first upload starts in a moment.";
+}
+document.addEventListener("change", async (e) => {
+  if (e.target.id !== "sync-on") return;
+  await fetch("/api/cloud/sync", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ enabled: e.target.checked }) });
+  loadSync();
+  setTimeout(loadSync, 5000);
+});
 
 // Dashboard PIN: set, change or remove it, and sign out.
 async function loadPIN() {

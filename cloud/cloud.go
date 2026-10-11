@@ -182,3 +182,44 @@ func (c *Client) GameProfiles() ([]GameProfile, error) {
 	}
 	return out, nil
 }
+
+// UploadSave sends one save backup version (the plain save, not gzipped)
+// to the account's cloud backups. file is "gba/Game.srm".
+func (c *Client) UploadSave(token, file, version string, data []byte) error {
+	return c.upload(token, map[string]string{"X-Kind": "save", "X-File": file, "X-Version": version}, data, "application/octet-stream")
+}
+
+// UploadJourney sends the device's whole Journey history (JSON).
+func (c *Client) UploadJourney(token string, data []byte) error {
+	return c.upload(token, map[string]string{"X-Kind": "journey"}, data, "application/json")
+}
+
+func (c *Client) upload(token string, headers map[string]string, data []byte, contentType string) error {
+	req, err := http.NewRequest(http.MethodPost, c.URL+"/functions/v1/backup-upload", bytes.NewReader(data))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("apikey", c.AnonKey)
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", contentType)
+	for k, v := range headers {
+		req.Header.Set(k, v)
+	}
+	res, err := c.HTTP.Do(req)
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+	body, _ := io.ReadAll(io.LimitReader(res.Body, 1<<16))
+	if res.StatusCode == http.StatusUnauthorized {
+		return ErrUnlinked
+	}
+	if res.StatusCode >= 300 {
+		var e struct{ Error string }
+		if json.Unmarshal(body, &e) == nil && e.Error != "" {
+			return errors.New(e.Error)
+		}
+		return fmt.Errorf("backup-upload: HTTP %d", res.StatusCode)
+	}
+	return nil
+}

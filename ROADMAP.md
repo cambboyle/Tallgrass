@@ -95,7 +95,7 @@ Launch supports three games, done properly: **Radical Red, HeartGold Generations
   - Curated guides and walkthroughs written in-site.
   - Links to a hack's official docs, with its author's permission where content is copied.
 - [x] **Profile registry** (2026-10-11): `profiles/` on main is published to Supabase (`game_profiles`) by CI; agents download it every 6 h and apply without a restart; community submissions are reviewed as pull requests. `minTallgrass` keeps older agents from profiles they can't read.
-- [ ] **Optional sync:** save backups and the event log to the cloud.
+- [x] **Optional sync** (2026-10-11): save backups (newest 30 versions per save) and Journey history to the account, switched on per device; downloads on the website's Account page.
 
 ### M5: Bank
 - [x] **Bridge first** (2026-10-11): download a save from the agent → edit it in OpenHome → upload it back (Saves → Upload edited save, `POST /api/saves/upload`). The agent checks it's a save of the same kind, backs up first and refuses while the game runs; bare 512 KB DS saves get DraStic's footer back.
