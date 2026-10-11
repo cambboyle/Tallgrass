@@ -179,7 +179,10 @@ func (s *Server) Snapshot() State {
 	st.Connected = true
 
 	for slot := 0; slot < s.prof.PartySlots; slot++ {
-		mon, err := gen3.Decode(raw[slot*size:(slot+1)*size], s.prof.EncryptedData)
+		mon, err := gen3.DecodeAs(s.prof.PokemonFormat, raw[slot*size:(slot+1)*size], s.prof.EncryptedData)
+		if err == nil {
+			err = gen3.ResolveForm(s.read, uint32(s.prof.FormSpecies), mon)
+		}
 		if err != nil {
 			log.Printf("slot %d: %v", slot+1, err)
 		}
@@ -290,7 +293,8 @@ func profileName(p *profile.Profile) string {
 }
 
 func nameTables(p *profile.Profile) gen3.NameTables {
-	return gen3.NameTables{Species: uint32(p.SpeciesNames), Moves: uint32(p.MoveNames), Items: uint32(p.ItemNames)}
+	return gen3.NameTables{Species: uint32(p.SpeciesNames), Moves: uint32(p.MoveNames), Items: uint32(p.ItemNames),
+		SpeciesLength: p.SpeciesNameLength, MoveLength: p.MoveNameLength, ItemSize: p.ItemSize}
 }
 
 // game returns the running game and its profile, for HTTP handlers.

@@ -1,0 +1,23 @@
+{
+  "name": "Pokémon R.O.W.E.",
+  "generation": 3,
+  "romSha1": [
+    "ab2196855ac47598cb2ef7ebff475d6ed17b1992"
+  ],
+  "verified": [
+    "live"
+  ],
+  "partyAddress": "0x02025104",
+  "partySlots": 6,
+  "pokemonSize": 76,
+  "pokemonFormat": "rowe",
+  "formSpecies": "0x085DC330",
+  "speciesNames": "0x0840C0E0",
+  "speciesNameLength": 13,
+  "moveNameLength": 17,
+  "itemSize": 56,
+  "trainer": {
+    "name": "[0x03004B80]",
+    "id": "[0x03004B80]+0xA"
+  }
+}

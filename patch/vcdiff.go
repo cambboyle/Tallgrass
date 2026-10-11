@@ -97,7 +97,7 @@ func (r *vcdReader) int() int {
 		if r.err != nil {
 			return 0
 		}
-		if i > 8 || n > 1<<50 {
+		if i > 4 || n > 1<<24 { // the next shift would overflow 32 bits; nothing in a ROM patch is that big
 			r.fail("bad number in xdelta patch")
 			return 0
 		}

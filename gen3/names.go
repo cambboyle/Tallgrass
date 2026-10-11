@@ -14,6 +14,9 @@ type NameTables struct {
 	Species uint32
 	Moves   uint32
 	Items   uint32
+	// Entry sizes, when a game differs from vanilla (11, 13 and 44 bytes):
+	// decomp hacks use longer names.
+	SpeciesLength, MoveLength, ItemSize int
 }
 
 // The Game Freak ROM header at 0x08000100 points at the game's data tables.
@@ -82,15 +85,27 @@ func (n *Names) MapName(table uint32, stride, offset, first, section int) (strin
 }
 
 func (n *Names) Species(id int) (string, error) {
-	return n.lookup(speciesTable, n.overrides.Species, id)
+	t := speciesTable
+	if l := n.overrides.SpeciesLength; l > 0 {
+		t.stride, t.length = l, l
+	}
+	return n.lookup(t, n.overrides.Species, id)
 }
 
 func (n *Names) Move(id int) (string, error) {
-	return n.lookup(moveTable, n.overrides.Moves, id)
+	t := moveTable
+	if l := n.overrides.MoveLength; l > 0 {
+		t.stride, t.length = l, l
+	}
+	return n.lookup(t, n.overrides.Moves, id)
 }
 
 func (n *Names) Item(id int) (string, error) {
-	return n.lookup(itemTable, n.overrides.Items, id)
+	t := itemTable
+	if size := n.overrides.ItemSize; size > 0 {
+		t.stride, t.length = size, min(size, 20)
+	}
+	return n.lookup(t, n.overrides.Items, id)
 }
 
 func (n *Names) lookup(t nameTable, override uint32, id int) (string, error) {

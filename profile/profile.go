@@ -38,6 +38,16 @@ type Profile struct {
 	SpeciesNames Addr `json:"speciesNames"`
 	MoveNames    Addr `json:"moveNames"`
 	ItemNames    Addr `json:"itemNames"`
+	// Name entry sizes when they differ from vanilla (11, 13, 44).
+	SpeciesNameLength int `json:"speciesNameLength"`
+	MoveNameLength    int `json:"moveNameLength"`
+	ItemSize          int `json:"itemSize"`
+
+	// PokemonFormat is "" for the vanilla/CFRU layout, or "rowe" (see
+	// gen3.DecodeROWE). FormSpecies, if set, maps species + form to the
+	// form's own species ID (gen3.ResolveForm).
+	PokemonFormat string `json:"pokemonFormat"`
+	FormSpecies   Addr   `json:"formSpecies"`
 
 	// Optional; leave out to skip that dashboard section.
 	Trainer        *Trainer        `json:"trainer"`

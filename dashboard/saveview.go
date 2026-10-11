@@ -401,9 +401,7 @@ func newROMContext(path, id string, prof *profile.Profile) (*romContext, error) 
 	}
 	read := rom.Read
 	rc := &romContext{id: id, prof: prof, rom: rom, sprites: map[string][]byte{},
-		names: gen3.NewNames(read, gen3.NameTables{
-			Species: uint32(prof.SpeciesNames), Moves: uint32(prof.MoveNames), Items: uint32(prof.ItemNames),
-		})}
+		names: gen3.NewNames(read, nameTables(prof))}
 
 	if dex := prof.Pokedex; dex != nil {
 		table, err := dex.SpeciesToNational.Resolve(read)

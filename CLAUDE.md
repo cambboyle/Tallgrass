@@ -111,6 +111,15 @@ Profiles use `Ref` addresses: `"0x020258E0"` is fixed, `"[0x03005008]+0x4"` mean
 - **Pokédex:** Radical Red patches `GetSetPokedexFlag` (`0x08104AB0`) to fixed RAM: seen `0x0202583C`, caught `0x020258E0`, 164 bytes each, bit = national number − 1. Species → national: u16 table at `[0x080432B0]` (= `0x098218F0`). Regional forms have their own species IDs (Alolan Rattata = 1020) but map to the base national number.
 - **Vanilla FireRed profile:** same code-pointer refs, dex flags at `[0x0300500C]+0x28` / `+0x5C`; **not verified**, as there's no vanilla FireRed ROM on the Pi.
 
+## Pokémon R.O.W.E. (decomp hack, 2.1.1, verified live 2026-10-11)
+
+- SHA-1 `ab2196855ac47598cb2ef7ebff475d6ed17b1992`, game code `BPEE`. Profile `profiles/rowe.json`: live party only so far (no location, dex, boxes or save yet).
+- Save block pointers in IWRAM: `0x03004B7C` SaveBlock1 (`0x0202629C`), `0x03004B80` SaveBlock2 (`0x02025594`), `0x03004B84` PC storage (`0x0202990C`). Party count `0x02025101`, party `0x02025104`, **76 bytes per Pokémon**; SaveBlock1 + `0x238` holds the party copy (as in vanilla Emerald).
+- **Own Pokémon format** (`gen3/rowe.go`, `pokemonFormat: "rowe"`), unencrypted bit fields, read from GetMonData `0x08097938` / GetBoxMonData `0x08097AFC` (switch tables `0x08097958` / `0x08097B18`; field numbers as vanilla pokeemerald). Box part 52 bytes, party adds PP/status/level/HP/stats from `0x34`. IVs are always 0 in this game (GetBoxMonData returns 0; stats agree).
+- **Forms:** species is 12 bits at `+0x1C`, form 5 bits above it; `formSpecies` `0x085DC330` = per-species pointer to a u16 list of form species (Meowth: 52, 1560 Alolan, 1569 Galarian). Level-from-exp and stats use the form species.
+- Names: species 13 bytes at `0x0840C0E0`, moves 17 bytes at the header pointer (`0x0841245B`, unaligned), items 56-byte records at `0x08F6A088` (`speciesNameLength`/`moveNameLength`/`itemSize`).
+- Nature: personality % 25 assumed (not yet confirmed against the summary screen).
+
 ## Unbound time of day (verified from its code, 2026-10-10)
 
 - Hour byte `0x03005EA6` (clock struct `0x03005EA0` + 6, as in Radical Red); Unbound's code loads it directly 47 times.

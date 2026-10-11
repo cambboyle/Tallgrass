@@ -39,6 +39,7 @@ type Pokemon struct {
 	OTName      string `json:"otName"`
 
 	Species    int    `json:"species"`
+	Form       int    `json:"-"` // a form number some formats store apart from species (see ResolveForm)
 	HeldItem   int    `json:"heldItem"`
 	Experience uint32 `json:"experience"`
 	Friendship int    `json:"friendship"`
