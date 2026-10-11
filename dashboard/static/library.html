@@ -23,6 +23,13 @@
   </form>
   <p class="sub" id="patch-msg" role="status"></p>
 </section>
+<section class="card patch-card" id="es-card" hidden>
+  <h3 class="panel-title">Game names in EmulationStation</h3>
+  <p class="sub">EmulationStation lists games by file name. Tallgrass can give the games it recognises their proper name and a short description. Your play counts and any names you've set yourself are kept, and the original list is saved as <code>gamelist.xml.bak-tallgrass</code>.</p>
+  <ul id="es-games" class="sub"></ul>
+  <p><button class="btn primary" id="es-apply">Update names</button></p>
+  <p class="sub" id="es-msg" role="status"></p>
+</section>
 <main id="library" class="saves"></main>
 
 <script>
@@ -124,7 +131,34 @@ document.getElementById("patch").addEventListener("submit", async (e) => {
   load();
 });
 
+async function loadES() {
+  const res = await fetch("/api/library/gamelist");
+  if (!res.ok) return;
+  const v = await res.json();
+  const card = document.getElementById("es-card");
+  card.hidden = !v.games?.length;
+  document.getElementById("es-games").innerHTML = (v.games || []).map((g) => `<li>${esc(g.file)} → <b>${esc(g.name)}</b></li>`).join("");
+  document.getElementById("es-msg").textContent = v.emulationStationRunning
+    ? "EmulationStation is running, and it rewrites these lists when it quits. On the Pi: Start → Quit → Quit EmulationStation, then press Update names. Restart the Pi afterwards to see them."
+    : "";
+}
+
+document.getElementById("es-apply").addEventListener("click", async (e) => {
+  const msg = document.getElementById("es-msg");
+  e.target.disabled = true;
+  const res = await fetch("/api/library/gamelist", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
+  e.target.disabled = false;
+  if (!res.ok) {
+    msg.textContent = await res.text();
+    return;
+  }
+  const results = await res.json();
+  const n = results.reduce((t, r) => t + r.renamed.length + r.added.length, 0);
+  msg.textContent = n ? `Updated ${n} game${n === 1 ? "" : "s"}. Start EmulationStation again (or restart the Pi) to see the new names.` : "Nothing to change: the names are already up to date.";
+});
+
 load();
+loadES();
 </script>
 </body>
 </html>

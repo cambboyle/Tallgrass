@@ -36,6 +36,7 @@ func main() {
 	backupDir := flag.String("backups", "backups", "where save file versions are kept")
 	drasticSaves := flag.String("drastic-saves", "/opt/retropie/configs/nds/drastic/backup", "DraStic's save folder (DS games)")
 	retropieConfigs := flag.String("retropie-configs", "/opt/retropie/configs", "RetroPie's config folder, for the setup wizard")
+	esGamelists := flag.String("es-gamelists", defaultESGamelists(), "EmulationStation's gamelists folder, for naming games in its menus")
 	drasticDir := flag.String("drastic-dir", "/opt/retropie/emulators/drastic", "where DraStic is installed, for the setup wizard")
 	authFile := flag.String("auth-file", "auth.json", "where the dashboard PIN (hashed) and sign-ins are kept; delete it to remove a forgotten PIN")
 	cloudURL := flag.String("cloud", cloud.DefaultURL, "Tallgrass backend (empty to turn accounts off)")
@@ -126,6 +127,7 @@ func main() {
 	}
 
 	dash.EnableSetup(*retropieConfigs, *drasticDir)
+	dash.EnableGamelists(*esGamelists)
 	if !*noUpdates {
 		dash.EnableUpdates(version)
 	}
@@ -185,4 +187,14 @@ func printMember(slot int, m *dashboard.Member) {
 
 func printStats(label string, s gen3.Stats) {
 	fmt.Printf("  %-6s %4d %4d %4d %4d %4d %4d\n", label, s.HP, s.Attack, s.Defense, s.SpAtk, s.SpDef, s.Speed)
+}
+
+// defaultESGamelists is where RetroPie's EmulationStation keeps its game
+// lists: ~/.emulationstation/gamelists.
+func defaultESGamelists() string {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return ""
+	}
+	return home + "/.emulationstation/gamelists"
 }

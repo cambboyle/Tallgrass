@@ -175,6 +175,12 @@ Also from ROM, via header pointers: front pics `0x08000128`, normal palettes `0x
 - Gen 3 saves accept both known signatures (`0x08012025`, Unbound's `0x01121999`) unless a profile sets one; Emerald's party is at SaveBlock1 + `0x238` (`saveFile.partyOffset`); Emerald map names are 8-byte region map entries (`location.mapNameStride/mapNameOffset`). All-caps name lists are title-cased (`gen3.TitleCase`).
 - `main.go`: `go run .` serves the dashboard on `:8080` (flags: `-host`, `-profile` (fallback where the running game can't be detected), `-listen`, `-interval`, `-drastic-saves` (default `/opt/retropie/configs/nds/drastic/backup`), `-db` for the SQLite file, default `tallgrass.db`, empty disables tracking; `-roms` default `/home/pi/RetroPie/roms`, save backups are off if it doesn't exist; `-backups` default `backups`); `go run . -print` prints the party once to the terminal
 
+## EmulationStation game names
+
+- `gamelist/`: `Apply(file, games)` names recognised games in `<es-gamelists>/<system>/gamelist.xml` (default `~/.emulationstation/gamelists`, same files as `/opt/retropie/configs/all/emulationstation/gamelists`). Only a name still equal to the file name (EmulationStation's default) is replaced; descriptions only where empty; unknown fields, attributes, folders and other games are kept; original saved once as `gamelist.xml.bak-tallgrass`; no-op runs don't rewrite.
+- Names come from `setupGames` (with version) or hand-made profiles, never `auto` ones (`Server.gamelistGames`). Library page card; `GET/POST /api/library/gamelist`.
+- EmulationStation rewrites gamelists when it quits, so writing is refused while it runs (`gamelist.Running`: a process whose executable is `emulationstation`). RetroArch runs under EmulationStation, so never kill it remotely.
+
 ## Ability names (Gen 3)
 
 - Gen 3 stores an ability slot, not an ID: `SpeciesTables.Ability(read, species, slot)` turns it into a name (slot 0 first, 1 second or first, 2 hidden where `hiddenAbility`); used by the Party page (`Server.abilityName`, tables cached in `s.species`) and Boxes/save views (`rc.mon`). Needs the profile's `speciesData`. CFRU's hidden-ability flag isn't decoded, so Radical Red/Unbound Pokémon with a hidden ability show their regular one.

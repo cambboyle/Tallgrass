@@ -89,12 +89,13 @@ type Server struct {
 
 	// Built on first use from ROM pointers, and dropped when the game
 	// disconnects. Only the poller goroutine touches these.
-	wild     *gen3.Wild
-	species  *gen3.SpeciesTables // for ability names; nil until needed
-	national *gen3.National
-	levels   *gen3.Levels
-	mapNames uint32
-	lastPC   time.Time // when the tracker last read the PC
+	wild        *gen3.Wild
+	species     *gen3.SpeciesTables // for ability names; nil until needed
+	esGamelists string              // EmulationStation's gamelists folder; "" = off
+	national    *gen3.National
+	levels      *gen3.Levels
+	mapNames    uint32
+	lastPC      time.Time // when the tracker last read the PC
 
 	engine  *tracker.Engine // nil unless EnableTracking was called
 	store   *tracker.Store  // settings and the run log; nil unless EnableTracking was called
@@ -455,6 +456,8 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /api/settings/nuzlocke", s.handleNuzlocke)
 	mux.HandleFunc("GET /api/library", s.handleLibrary)
 	mux.HandleFunc("POST /api/library/patch", s.handleLibraryPatch)
+	mux.HandleFunc("GET /api/library/gamelist", s.handleGamelist)
+	mux.HandleFunc("POST /api/library/gamelist", s.handleGamelist)
 	mux.HandleFunc("GET /api/ds/sprite", s.handleDSSprite)
 	mux.HandleFunc("GET /api/species", s.handleSpecies)
 	mux.HandleFunc("GET /api/trainers", s.handleTrainers)

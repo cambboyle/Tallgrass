@@ -114,7 +114,7 @@ Launch supports three games, done properly: **Radical Red, HeartGold Generations
 ### M7: Romhack library manager (the original Phase 8)
 - [x] Apply `.ips`/`.bps`/`.ups`/`.xdelta` patches (2026-10-11): Library → Patch a ROM, `POST /api/library/patch`. BPS/UPS find their base by size + CRC32 and verify the result; xdelta (VCDIFF, no secondary compression) checks each window's Adler-32; IPS checks nothing. Verified with a real HeartGold → HGG xdelta (SHA-1 matches).
 - [ ] A known-hacks catalogue in the registry: name, base ROM hash, patch source link (we link, never host), result hash.
-- [ ] Generate EmulationStation `gamelist.xml` (names, descriptions; artwork the user supplies or that hack authors permit).
+- [x] EmulationStation `gamelist.xml` (2026-10-11): proper names and a short description for recognised games, keeping everything else (Library page). Artwork: not done (needs what users supply or hack authors permit).
 
 ## Decisions to make
 
