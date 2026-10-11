@@ -99,5 +99,23 @@
     "classNames": "[0x080187FC]",
     "classNameLength": 13,
     "format": "rowe"
+  },
+  "speciesData": {
+    "format": "rowe",
+    "typeNames": "[0x08016B58]",
+    "typeNameLength": 11,
+    "abilityNames": "[0x080001C0]",
+    "abilityNameLength": 21,
+    "hiddenAbility": true,
+    "learnsets": "[0x08093F28]",
+    "learnsetEntry": 4,
+    "evolutions": "[0x08037CB8]",
+    "evolutionsPerSpecies": 10,
+    "evolutionScheme": "rowe",
+    "tmMoves": "[0x08093F34]",
+    "tmLearnsets": "0x084ECDC0",
+    "tmByteLists": true,
+    "tmCount": 120,
+    "eggMoves": "[0x080A1E08]"
   }
 }

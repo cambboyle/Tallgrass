@@ -48,8 +48,8 @@ type Profile struct {
 	// form's own species ID (gen3.ResolveForm).
 	PokemonFormat string `json:"pokemonFormat"`
 	// Flags is the game's flag array (flag n = bit n%8 of byte n/8).
-	Flags Ref `json:"flags"`
-	FormSpecies   Addr   `json:"formSpecies"`
+	Flags       Ref  `json:"flags"`
+	FormSpecies Addr `json:"formSpecies"`
 
 	// Optional; leave out to skip that dashboard section.
 	Trainer        *Trainer        `json:"trainer"`
@@ -96,6 +96,15 @@ type SpeciesData struct {
 	// SpeciesCount bounds whole-ROM scans; 0 means "count the names", which
 	// works for hacks but not vanilla, where move names follow species names.
 	SpeciesCount int `json:"speciesCount"`
+
+	// Decomp-hack layouts (R.O.W.E.): "rowe" 64-byte species records,
+	// type name length (7 if 0), bytes per level-up move (4: u16 move, u16
+	// level), and TM lists as per-species u8 TM numbers ending 0xFF.
+	Format         string `json:"format"`
+	TypeNameLength int    `json:"typeNameLength"`
+	LearnsetEntry  int    `json:"learnsetEntry"`
+	TMByteLists    bool   `json:"tmByteLists"`
+	TMCount        int    `json:"tmCount"`
 }
 
 // SaveFile describes the .srm/.sav layout, for the box viewer.

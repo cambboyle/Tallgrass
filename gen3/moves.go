@@ -26,6 +26,9 @@ func readBits(read ReadMemory, table uint32, size, species int) ([]int, error) {
 }
 
 func (t SpeciesTables) readMachineMoves(read ReadMemory, names *Names, species int, info *SpeciesInfo) error {
+	if t.TMByteLists {
+		return t.readTMByteList(read, names, species, info)
+	}
 	if t.TMMoves == 0 || t.TMLearnsets == 0 || t.TMLearnsetSize == 0 {
 		return nil
 	}
@@ -120,6 +123,42 @@ func (t SpeciesTables) readEggMoves(read ReadMemory, names *Names, species int, 
 				info.EggMoves = append(info.EggMoves, name)
 			}
 		}
+	}
+	return nil
+}
+
+// readTMByteList reads R.O.W.E.-style TM compatibility: a pointer per
+// species to u8 TM numbers (0-based) ending 0xFF. A species without a list
+// (a form, mostly) has a null pointer and is shown with none.
+func (t SpeciesTables) readTMByteList(read ReadMemory, names *Names, species int, info *SpeciesInfo) error {
+	if t.TMMoves == 0 || t.TMLearnsets == 0 || t.TMCount == 0 {
+		return nil
+	}
+	p, err := read(t.TMLearnsets+uint32(species*4), 4)
+	if err != nil {
+		return err
+	}
+	list := binary.LittleEndian.Uint32(p)
+	if list == 0 {
+		return nil
+	}
+	b, err := read(list, 256)
+	if err != nil {
+		return err
+	}
+	moves, err := read(t.TMMoves, t.TMCount*2)
+	if err != nil {
+		return err
+	}
+	for _, n := range b {
+		if n == 0xFF {
+			break
+		}
+		if int(n) >= t.TMCount {
+			continue
+		}
+		name, _ := names.Move(int(binary.LittleEndian.Uint16(moves[int(n)*2:])))
+		info.TMMoves = append(info.TMMoves, TMMove{Machine: fmt.Sprintf("TM%03d", int(n)+1), Move: name})
 	}
 	return nil
 }

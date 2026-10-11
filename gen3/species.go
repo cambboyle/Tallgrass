@@ -6,6 +6,9 @@ import (
 	"strings"
 )
 
+// roweSpeciesSize is R.O.W.E.'s species record.
+const roweSpeciesSize = 64
+
 // SpeciesTables locates per-species data in a Gen 3 ROM.
 type SpeciesTables struct {
 	BaseStats      uint32
@@ -33,6 +36,13 @@ type SpeciesTables struct {
 	EvoScheme string
 	// AreaName names a region map section, for location-based evolutions.
 	AreaName func(section int) string
+
+	// Decomp-hack layouts (R.O.W.E.); zero values mean vanilla/CFRU.
+	Format        string // "rowe": 64-byte species records with u16 stats and abilities
+	TypeNameLen   int    // 7 if 0
+	LearnsetEntry int    // bytes per level-up move; 4 = u16 move, u16 level
+	TMByteLists   bool   // TMLearnsets points per species at u8 TM numbers ending 0xFF
+	TMCount       int    // TMs in TMMoves (with TMByteLists)
 }
 
 // SpeciesInfo is what a species page shows.
@@ -76,35 +86,54 @@ func (t SpeciesTables) Species(read ReadMemory, names *Names, species int) (*Spe
 		TMMoves: []TMMove{}, TutorMoves: []string{}, EggMoves: []string{}}
 	info.Name, _ = names.Species(species)
 
-	b, err := read(t.BaseStats+uint32(species*baseStatsSize), baseStatsSize)
+	size := baseStatsSize
+	if t.Format == "rowe" {
+		size = roweSpeciesSize
+	}
+	b, err := read(t.BaseStats+uint32(species*size), size)
 	if err != nil {
 		return nil, err
 	}
-	info.BaseStats = Stats{HP: int(b[0]), Attack: int(b[1]), Defense: int(b[2]), Speed: int(b[3]), SpAtk: int(b[4]), SpDef: int(b[5])}
-	for i, ty := range []byte{b[6], b[7]} {
-		if i == 1 && ty == b[6] {
+	// Vanilla/CFRU: u8 stats, types at 6–7, abilities at 22, 23 (hidden 26).
+	// ROWE: u16 stats, types at 0xC–0xD, u16 abilities at 0x1E, 0x20
+	// (hidden 0x24).
+	stat := func(i int) int { return int(b[i]) }
+	typeAt, abilities, hidden := 6, []int{int(b[22]), int(b[23])}, int(b[26])
+	if t.Format == "rowe" {
+		le := binary.LittleEndian
+		stat = func(i int) int { return int(le.Uint16(b[i*2:])) }
+		typeAt = 0xC
+		abilities, hidden = []int{int(le.Uint16(b[0x1E:])), int(le.Uint16(b[0x20:]))}, int(le.Uint16(b[0x24:]))
+	}
+	info.BaseStats = Stats{HP: stat(0), Attack: stat(1), Defense: stat(2), Speed: stat(3), SpAtk: stat(4), SpDef: stat(5)}
+	typeLen := t.TypeNameLen
+	if typeLen == 0 {
+		typeLen = 7
+	}
+	for i, ty := range []byte{b[typeAt], b[typeAt+1]} {
+		if i == 1 && ty == b[typeAt] {
 			break // single-typed
 		}
-		name, err := t.fixedName(read, t.TypeNames, 7, int(ty))
+		name, err := t.fixedName(read, t.TypeNames, typeLen, int(ty))
 		if err != nil {
 			return nil, err
 		}
 		info.Types = append(info.Types, name)
 	}
-	ability := func(id byte) string {
+	ability := func(id int) string {
 		if id == 0 {
 			return ""
 		}
-		n, _ := t.fixedName(read, t.AbilityNames, t.AbilityNameLen, int(id))
+		n, _ := t.fixedName(read, t.AbilityNames, t.AbilityNameLen, id)
 		return n
 	}
-	for _, id := range []byte{b[22], b[23]} {
+	for _, id := range abilities {
 		if a := ability(id); a != "" && (len(info.Abilities) == 0 || info.Abilities[0] != a) {
 			info.Abilities = append(info.Abilities, a)
 		}
 	}
 	if t.HiddenAbility {
-		info.Hidden = ability(b[26])
+		info.Hidden = ability(hidden)
 		for _, a := range info.Abilities {
 			if a == info.Hidden {
 				info.Hidden = "" // some hacks repeat a regular ability as the hidden one
@@ -145,13 +174,21 @@ func (t SpeciesTables) readLearnset(read ReadMemory, names *Names, species int, 
 	if t.CFRULearnsets {
 		entry = 3
 	}
+	if t.LearnsetEntry > 0 {
+		entry = t.LearnsetEntry
+	}
 	b, err := read(list, 120*entry) // no species learns 120 moves
 	if err != nil {
 		return err
 	}
 	for o := 0; o+entry <= len(b); o += entry {
 		var move, level int
-		if t.CFRULearnsets {
+		if entry == 4 {
+			move, level = int(le.Uint16(b[o:])), int(le.Uint16(b[o+2:]))
+			if move == 0xFFFF || move == 0 {
+				break
+			}
+		} else if t.CFRULearnsets {
 			move, level = int(le.Uint16(b[o:])), int(b[o+2])
 			if move == 0 || move == 0xFFFF { // CFRU ends lists with (0, 0xFF)
 				break
@@ -201,7 +238,14 @@ func (t SpeciesTables) evolutionMethod(read ReadMemory, names *Names, method, pa
 	item := func(id int) string { n, _ := names.Item(id); return n }
 	move := func(id int) string { n, _ := names.Move(id); return n }
 	species := func(id int) string { n, _ := names.Species(id); return n }
-	typeName := func(id int) string { n, _ := t.fixedName(read, t.TypeNames, 7, id); return n }
+	typeName := func(id int) string {
+		size := t.TypeNameLen
+		if size == 0 {
+			size = 7
+		}
+		n, _ := t.fixedName(read, t.TypeNames, size, id)
+		return n
+	}
 	area := func(sec int) string {
 		if t.AreaName != nil {
 			if n := t.AreaName(sec); n != "" {
@@ -242,6 +286,9 @@ func (t SpeciesTables) evolutionMethod(read ReadMemory, names *Names, method, pa
 	}
 	if t.EvoScheme == "" {
 		return fmt.Sprintf("Special condition (method %d)", method)
+	}
+	if t.EvoScheme == "rowe" {
+		return roweEvolution(method, param, item, move, species, typeName, area)
 	}
 	switch method { // CFRU
 	case 16:
@@ -302,6 +349,59 @@ func (t SpeciesTables) evolutionMethod(read ReadMemory, names *Names, method, pa
 		case 39:
 			return "Use " + item(param) + " (on a full moon)"
 		}
+	}
+	return fmt.Sprintf("Special condition (method %d)", method)
+}
+
+// roweEvolution describes R.O.W.E.'s methods from 16 on (pokeemerald
+// expansion's numbering; 1–15 are vanilla). Worked out from the evolution
+// table: e.g. Burmy → Wormadam is 16, Rockruff → Lycanroc 18, 19 and 20.
+// The level-scaling helper at 0x08037BB0 groups the rest into level-based
+// and item-based ones; anything else is named by number.
+func roweEvolution(method, param int, item, move, species, typeName, area func(int) string) string {
+	switch method {
+	case 16:
+		return fmt.Sprintf("Level %d (female)", param)
+	case 17:
+		return fmt.Sprintf("Level %d (male)", param)
+	case 18:
+		return fmt.Sprintf("Level %d at night", param)
+	case 19:
+		return fmt.Sprintf("Level %d during the day", param)
+	case 20:
+		return fmt.Sprintf("Level %d at dusk", param)
+	case 21:
+		return "Level up during the day holding " + item(param)
+	case 22:
+		return "Level up at night holding " + item(param)
+	case 23:
+		return "Level up knowing " + move(param)
+	case 24:
+		return fmt.Sprintf("Level up knowing a %s-type move", typeName(param))
+	case 25:
+		return "Level up at " + area(param)
+	case 26:
+		return "Use " + item(param) + " (male)"
+	case 27:
+		return "Use " + item(param) + " (female)"
+	case 28:
+		return fmt.Sprintf("Level %d while it's raining", param)
+	case 29:
+		return "Level up with " + species(param) + " in the party"
+	case 31:
+		return "Trade for " + species(param)
+	case 39:
+		return fmt.Sprintf("Level %d", param)
+	case 30, 35, 36, 37, 41, 42:
+		// The game's level-scaling code treats these as level evolutions;
+		// the extra condition (time, place, form) isn't known.
+		return fmt.Sprintf("Level %d (special condition)", param)
+	case 33, 44:
+		return "Use " + item(param) + " (special condition)"
+	case 0xFFFF:
+		return "Mega Evolution holding " + item(param)
+	case 0xFFFE:
+		return "Mega Evolution knowing " + move(param)
 	}
 	return fmt.Sprintf("Special condition (method %d)", method)
 }

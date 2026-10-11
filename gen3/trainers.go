@@ -135,21 +135,49 @@ func TrainerMaps(read ReadMemory, groups uint32) (map[int][][2]uint8, error) {
 // trainers' scripts start with one; gym leaders' usually check flags first,
 // and hacks may hold a second battle for a harder difficulty. CFRU hacks
 // add battle types past vanilla's 0–9 (Unbound uses 13).
+//
+// Scripts that branch first (decomp hacks' gym leaders: R.O.W.E.'s
+// Roxanne checks flags, then jumps to her battle) are followed through
+// call, goto, call_if and goto_if, one level deep and only when the script
+// has no battle of its own (deeper, shared scripts put trainers on maps
+// they aren't on).
 func scriptTrainers(read ReadMemory, script uint32) []int {
-	if !isROMPointer(script) {
-		return nil
-	}
-	b, err := read(script, 72)
-	if err != nil {
-		return nil
-	}
 	var ids []int
-	for o := 0; o+10 <= len(b); o++ {
-		if b[o] == 0x5C && b[o+1] <= 15 && isROMPointer(binary.LittleEndian.Uint32(b[o+6:])) {
-			ids = append(ids, int(binary.LittleEndian.Uint16(b[o+2:])))
-			o += 9
+	seen := map[uint32]bool{}
+	var scan func(at uint32, depth int)
+	scan = func(at uint32, depth int) {
+		if !isROMPointer(at) || seen[at] {
+			return
+		}
+		seen[at] = true
+		b, err := read(at, 72)
+		if err != nil {
+			return
+		}
+		le := binary.LittleEndian
+		var targets []uint32
+		for o := 0; o+10 <= len(b); o++ {
+			if b[o] == 0x5C && b[o+1] <= 15 && isROMPointer(le.Uint32(b[o+6:])) {
+				if id := int(le.Uint16(b[o+2:])); !slices.Contains(ids, id) {
+					ids = append(ids, id)
+				}
+				o += 9
+				continue
+			}
+			switch {
+			case (b[o] == 0x04 || b[o] == 0x05) && o+5 <= len(b) && isROMPointer(le.Uint32(b[o+1:])):
+				targets = append(targets, le.Uint32(b[o+1:])) // call, goto
+			case (b[o] == 0x06 || b[o] == 0x07) && o+6 <= len(b) && b[o+1] <= 5 && isROMPointer(le.Uint32(b[o+2:])):
+				targets = append(targets, le.Uint32(b[o+2:])) // goto_if, call_if
+			}
+		}
+		if depth > 0 && len(ids) == 0 {
+			for _, t := range targets {
+				scan(t, depth-1)
+			}
 		}
 	}
+	scan(script, 1)
 	return ids
 }
 

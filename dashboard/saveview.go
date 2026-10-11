@@ -775,7 +775,8 @@ func speciesTables(p *profile.Profile, read gen3.ReadMemory) (*gen3.SpeciesTable
 	}
 	t := &gen3.SpeciesTables{AbilityNameLen: sd.AbilityNameLength, HiddenAbility: sd.HiddenAbility,
 		CFRULearnsets: sd.CFRULearnsets, EvosPerSpecies: sd.EvolutionsPerSpecies,
-		TMLearnsetSize: sd.TMLearnsetSize, TutorLearnsetSize: sd.TutorLearnsetSize, EvoScheme: sd.EvolutionScheme}
+		TMLearnsetSize: sd.TMLearnsetSize, TutorLearnsetSize: sd.TutorLearnsetSize, EvoScheme: sd.EvolutionScheme,
+		Format: sd.Format, TypeNameLen: sd.TypeNameLength, LearnsetEntry: sd.LearnsetEntry, TMByteLists: sd.TMByteLists, TMCount: sd.TMCount}
 	for _, r := range []struct {
 		ref profile.Ref
 		out *uint32
