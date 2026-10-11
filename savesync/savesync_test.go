@@ -77,6 +77,7 @@ func (d *fakeDevice) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		b, _ := io.ReadAll(r.Body)
 		d.uploads++
 		d.versions = append(d.versions, b)
+		w.WriteHeader(http.StatusNoContent) // as the real dashboard does
 	}
 }
 

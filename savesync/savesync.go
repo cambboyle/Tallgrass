@@ -308,12 +308,12 @@ func (s *Syncer) push(f remoteFile, local string, data []byte, hash string) erro
 		return err
 	}
 	st := s.st.Files[f.Path]
-	switch code {
-	case http.StatusOK:
+	switch {
+	case code >= 200 && code < 300: // the dashboard answers 204
 		st.Local = hash
 		st.Rejected = ""
 		s.Logf("uploaded %s", f.Path)
-	case http.StatusConflict:
+	case code == http.StatusConflict:
 		return nil // its game started meanwhile
 	default:
 		st.Rejected = hash
