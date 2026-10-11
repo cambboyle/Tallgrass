@@ -53,5 +53,11 @@
         "toHour": 6
       }
     ]
+  },
+  "pokedex": {
+    "caught": "[0x03004B7C]+0x33DC",
+    "seen": "[0x03004B7C]+0x3320",
+    "flagBytes": 188,
+    "speciesToNational": "[0x0809B0DC]"
   }
 }
