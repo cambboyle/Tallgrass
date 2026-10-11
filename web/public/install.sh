@@ -7,12 +7,22 @@
 # release's checksums, installs it to ~/tallgrass, and runs it as a service
 # (Tallgrass then keeps itself up to date). Options, as environment
 # variables: TALLGRASS_VERSION=0.1.0 for a specific release,
-# TALLGRASS_DIR=/path to install somewhere else.
+# TALLGRASS_DIR=/path to install somewhere else. Run as root (sudo, or the
+# RetroPie-Setup module), it installs for TALLGRASS_USER, else the user who
+# ran sudo.
 set -euo pipefail
 
 REPO="cambboyle/Tallgrass"
-DIR="${TALLGRASS_DIR:-$HOME/tallgrass}"
 VERSION="${TALLGRASS_VERSION:-latest}"
+SUDO=sudo
+TARGET_USER="$(id -un)"
+if [ "$(id -u)" -eq 0 ]; then
+  SUDO=""
+  TARGET_USER="${TALLGRASS_USER:-${SUDO_USER:-root}}"
+fi
+TARGET_HOME="$(getent passwd "$TARGET_USER" | cut -d: -f6)"
+TARGET_HOME="${TARGET_HOME:-$HOME}"
+DIR="${TALLGRASS_DIR:-$TARGET_HOME/tallgrass}"
 
 say() { printf '\033[1;32m==>\033[0m %s\n' "$*"; }
 die() { printf '\033[1;31mError:\033[0m %s\n' "$*" >&2; exit 1; }
@@ -45,22 +55,24 @@ mkdir -p "$DIR"
 mv "$TMP/$BIN" "$DIR/tallgrass.new"
 chmod 755 "$DIR/tallgrass.new"
 mv "$DIR/tallgrass.new" "$DIR/tallgrass"
+# The service runs as TARGET_USER and replaces its own binary when updating.
+[ "$(id -un)" = "$TARGET_USER" ] || chown "$TARGET_USER:" "$DIR" "$DIR/tallgrass"
 say "Installed $("$DIR/tallgrass" -version) to $DIR"
 
 # Where things are on this system: RetroPie keeps ROMs in ~/RetroPie/roms.
-ROMS="$HOME/RetroPie/roms"
-[ -d "$ROMS" ] || ROMS="$HOME/roms"
+ROMS="$TARGET_HOME/RetroPie/roms"
+[ -d "$ROMS" ] || ROMS="$TARGET_HOME/roms"
 
 if command -v systemctl >/dev/null && [ -d /run/systemd/system ]; then
-  say "Setting up the tallgrass service (needs sudo)"
-  sudo tee /etc/systemd/system/tallgrass.service >/dev/null <<UNIT
+  say "Setting up the tallgrass service${SUDO:+ (needs sudo)}"
+  $SUDO tee /etc/systemd/system/tallgrass.service >/dev/null <<UNIT
 [Unit]
 Description=Tallgrass dashboard
 After=network-online.target
 Wants=network-online.target
 
 [Service]
-User=$USER
+User=$TARGET_USER
 WorkingDirectory=$DIR
 ExecStart=$DIR/tallgrass -host 127.0.0.1:55355 -listen :8080 -roms $ROMS
 Restart=always
@@ -72,9 +84,9 @@ IOSchedulingClass=idle
 [Install]
 WantedBy=multi-user.target
 UNIT
-  sudo systemctl daemon-reload
-  sudo systemctl enable tallgrass >/dev/null 2>&1
-  sudo systemctl restart tallgrass
+  $SUDO systemctl daemon-reload
+  $SUDO systemctl enable tallgrass >/dev/null 2>&1
+  $SUDO systemctl restart tallgrass
 else
   say "No systemd here: start Tallgrass yourself with: cd $DIR && ./tallgrass"
 fi
