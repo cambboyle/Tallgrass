@@ -61,7 +61,7 @@
     "speciesToNational": "[0x0809B0DC]"
   },
   "saveFile": {
-    "sectorDataSize": "0xF80",
+    "sectorDataSize": "0xFF4",
     "verifyChecksums": false,
     "partyOffset": "0x238",
     "boxMonSize": 52,

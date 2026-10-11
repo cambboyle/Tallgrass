@@ -138,7 +138,11 @@ func main() {
 
 	go dash.Poll(*interval)
 
-	log.Printf("dashboard on http://localhost%s (RetroArch at %s)", *listen, *host)
+	addr := *listen
+	if strings.HasPrefix(addr, ":") {
+		addr = "localhost" + addr
+	}
+	log.Printf("dashboard on http://%s (RetroArch at %s)", addr, *host)
 	log.Fatal(http.ListenAndServe(*listen, dash.Handler()))
 }
 
