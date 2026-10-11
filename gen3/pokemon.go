@@ -48,9 +48,11 @@ type Pokemon struct {
 	MetLocation int `json:"metLocation"` // region map section
 	MetLevel    int `json:"metLevel"`    // 0 if hatched
 
-	EVs   Stats `json:"evs"`
-	IVs   Stats `json:"ivs"`
-	NoIVs bool  `json:"noIvs,omitempty"` // the game has no IVs (R.O.W.E.): IVs are always 0
+	EVs Stats `json:"evs"`
+	IVs Stats `json:"ivs"`
+	// SharedIVs: the game gives every Pokémon the same IVs from the
+	// trainer's progress (R.O.W.E.'s Trainer Skills) instead of storing them.
+	SharedIVs bool `json:"sharedIvs,omitempty"`
 
 	IsEgg       bool   `json:"isEgg"`
 	IsShiny     bool   `json:"isShiny"`

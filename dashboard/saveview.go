@@ -569,6 +569,9 @@ func (s *Server) handleBoxes(w http.ResponseWriter, r *http.Request) {
 			if err == nil && p != nil && scaling {
 				p.Level = scaled
 			}
+			if ivs, ok := s.skillIVs(); err == nil && p != nil && ok {
+				p.IVs = ivs
+			}
 			if err == nil && p != nil {
 				view.Party = append(view.Party, rc.mon(p, false))
 			}
@@ -671,6 +674,21 @@ func (rc *romContext) view(save *gen3.Save) (*SaveView, error) {
 
 	if dex := rc.prof.Pokedex; dex != nil && rc.national != nil {
 		v.Pokedex = rc.dex(save, dex.FlagBytes)
+	}
+	// R.O.W.E.: every Pokémon's IVs come from the trainer's skills, kept in
+	// SaveBlock2.
+	if ts := rc.prof.ROWETrainerSkills; ts != nil && int(ts.SaveOffset)+32 <= len(save.Block2) {
+		ivs := gen3.ROWESkillIVs(save.Block2[ts.SaveOffset:])
+		for _, m := range v.Party {
+			m.IVs = ivs
+		}
+		for _, b := range v.Boxes {
+			for _, m := range b.Mons {
+				if m != nil {
+					m.IVs = ivs
+				}
+			}
+		}
 	}
 	return v, nil
 }

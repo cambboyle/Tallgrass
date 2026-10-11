@@ -22,9 +22,9 @@ import (
 //	0x32 markings (bits 0–3), ability slot (4–5), OT gender (6)
 //
 // The party adds PP at 0x34, status 0x38, level 0x3C, mail 0x3D, HP 0x3E
-// and the six stats from 0x40. The game reports every IV as 0, and stats
-// match that, so IVs stay zero. Nature isn't stored apart from
-// personality as far as the code shows.
+// and the six stats from 0x40. IVs aren't stored: every Pokémon's come
+// from the trainer's Stat Boost skills (ROWESkillIVs). Nature isn't stored
+// apart from personality.
 const (
 	ROWEBoxSize   = 52
 	ROWEPartySize = 76
@@ -63,7 +63,7 @@ func DecodeROWE(b []byte) (*Pokemon, error) {
 	p.MetLevel = int(b[0x28] & 0x7F)
 
 	p.setIVsAndPersonalityTraits(0)
-	p.NoIVs = true
+	p.SharedIVs = true // see ROWESkillIVs
 	p.IsEgg = b[0x27]&0x80 != 0
 	p.AbilitySlot = int(b[0x32] >> 4 & 3)
 	p.IsShiny = p.IsShiny || w14>>31 != 0
@@ -118,4 +118,19 @@ func DecodeAs(format string, b []byte, encrypted bool) (*Pokemon, error) {
 		return DecodeROWE(b)
 	}
 	return Decode(b, encrypted)
+}
+
+// ROWESkillIVs works out R.O.W.E.'s IVs, which every Pokémon shares: each
+// is 3 × the level of its Trainer Skill + 1 (0x0809EEC8; level 0 gives 1,
+// the maximum level 10 gives 31). skills are the trainer's skill levels
+// from skill 0 (SaveBlock2 + 0xB4A); the stat boosts are skills 16–21:
+// HP, Attack, Defense, Sp. Atk, Sp. Def, Speed.
+func ROWESkillIVs(skills []byte) Stats {
+	iv := func(skill int) int {
+		if skill >= len(skills) {
+			return 1
+		}
+		return min(3*int(min(skills[skill], 10))+1, 31)
+	}
+	return Stats{HP: iv(16), Attack: iv(17), Defense: iv(18), SpAtk: iv(19), SpDef: iv(20), Speed: iv(21)}
 }

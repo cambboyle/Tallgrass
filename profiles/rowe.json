@@ -122,5 +122,9 @@
   "vars": "[0x03004B7C]+0x1BCA",
   "roweLevelScaling": {
     "table": "0x0937BC80"
+  },
+  "roweTrainerSkills": {
+    "levels": "[0x03004B80]+0xB4A",
+    "saveOffset": "0xB4A"
   }
 }

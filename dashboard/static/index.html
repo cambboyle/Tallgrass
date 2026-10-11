@@ -83,8 +83,9 @@ function card(p, slot) {
     </div>
     <table>
       <thead><tr><th></th>${head}</tr></thead>
-      <tbody>${row("Stat", p.stats)}${p.noIvs ? `<tr><td>IV</td><td colspan="6" class="sub">None in this game</td></tr>` : row("IV", p.ivs, 31)}${row("EV", p.evs, 252)}</tbody>
+      <tbody>${row("Stat", p.stats)}${row(p.sharedIvs ? "IV*" : "IV", p.ivs, 31)}${row("EV", p.evs, 252)}</tbody>
     </table>
+    ${p.sharedIvs ? `<div class="sub iv-note">* IVs come from your Trainer Skills (Stat Boosts) and are the same for every Pokémon.</div>` : ""}
     <div class="moves">${moves}</div>
     <div class="meta">
       <span>Item ${esc(item)}</span>
@@ -150,7 +151,7 @@ function routeHTML(loc) {
   const species = new Map();
   period.methods.forEach((m) => m.encounters.forEach((e) => species.set(e.species, e.caught)));
   const caught = [...species.values()].filter(Boolean).length;
-  const clock = loc.hour != null ? ` · ${hourLabel(loc.hour)}${period.swapped ? " (day and night swapped)" : ""}` : "";
+  const clock = loc.hour != null ? ` · ${hourLabel(loc.hour)}${period.swapped ? " (day and night switched by sleeping)" : ""}` : "";
   const legend = `<span class="legend"><span class="mark caught">✓</span>caught <span class="mark seen"></span>seen</span>`;
   const summary = `<div class="sub">${caught}/${species.size} caught${clock}${legend}</div>`;
 

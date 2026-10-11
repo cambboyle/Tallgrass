@@ -42,3 +42,15 @@ func TestDecodeROWE(t *testing.T) {
 		t.Errorf("ResolveForm: species %d, %v", p.Species, err)
 	}
 }
+
+// IVs from Trainer Skill levels (skills 16–21 = HP, Atk, Def, SpA, SpD,
+// Spe): 3 × level + 1, so 1 untouched and 31 at the maximum of 10.
+func TestROWESkillIVs(t *testing.T) {
+	skills := make([]byte, 32)
+	skills[16], skills[17], skills[21] = 10, 3, 0
+	got := ROWESkillIVs(skills)
+	want := Stats{HP: 31, Attack: 10, Defense: 1, SpAtk: 1, SpDef: 1, Speed: 1}
+	if got != want {
+		t.Errorf("ROWESkillIVs = %+v, want %+v", got, want)
+	}
+}

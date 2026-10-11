@@ -54,7 +54,11 @@ type Profile struct {
 	// ROWELevelScaling is R.O.W.E.'s optional level scaling: the level-cap
 	// table it reads levels from when its scaling flags are set.
 	ROWELevelScaling *ROWELevelScaling `json:"roweLevelScaling"`
-	FormSpecies      Addr              `json:"formSpecies"`
+	// ROWETrainerSkills: where R.O.W.E.'s Trainer Skill levels are (a byte
+	// per skill), from which every Pokémon's IVs come (gen3.ROWESkillIVs).
+	// SaveOffset is the same place in the save's SaveBlock2.
+	ROWETrainerSkills *ROWETrainerSkills `json:"roweTrainerSkills"`
+	FormSpecies       Addr               `json:"formSpecies"`
 
 	// Optional; leave out to skip that dashboard section.
 	Trainer        *Trainer        `json:"trainer"`
@@ -211,12 +215,19 @@ func (l *Location) MapNameTable() (stride, offset int) {
 	return l.MapNameStride, l.MapNameOffset
 }
 
-// ROWELevelScaling: with flag 0x2D or 0xE3A set, ROWE reports every
+// ROWELevelScaling: R.O.W.E.'s Grindless Mode (flag 0x2D: "removes
+// levels, balancing stats by badges", per the hack's docs). With flag 0x2D
+// or 0xE3A set, ROWE reports every
 // Pokémon's level as cap(2) + cap(5) from Table (u16 at difficulty*304 +
 // kind*38 + stage*2; difficulty var 0x407A, stage var 0x4061, or 18/17
 // with flags 0xDEE/0xCD4), 100 at stage 18, or 5 with only 0xE3A set.
 type ROWELevelScaling struct {
 	Table Addr `json:"table"`
+}
+
+type ROWETrainerSkills struct {
+	Levels     Ref  `json:"levels"`
+	SaveOffset Addr `json:"saveOffset"`
 }
 
 type WildEncounters struct {

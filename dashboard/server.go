@@ -178,6 +178,7 @@ func (s *Server) Snapshot() State {
 	}
 	st.Connected = true
 
+	ivs, haveIVs := s.skillIVs()
 	scaled, scaling, err := s.scaledLevel()
 	if err != nil {
 		log.Printf("level scaling: %v", err)
@@ -186,6 +187,9 @@ func (s *Server) Snapshot() State {
 		mon, err := gen3.DecodeAs(s.prof.PokemonFormat, raw[slot*size:(slot+1)*size], s.prof.EncryptedData)
 		if mon != nil && scaling {
 			mon.Level = scaled // the game reports this level everywhere
+		}
+		if mon != nil && haveIVs {
+			mon.IVs = ivs
 		}
 		if err == nil {
 			err = gen3.ResolveForm(s.read, uint32(s.prof.FormSpecies), mon)

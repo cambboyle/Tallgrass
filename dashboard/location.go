@@ -135,6 +135,24 @@ func (s *Server) variable(n int) (int, error) {
 	return int(b[0]) | int(b[1])<<8, nil
 }
 
+// skillIVs is R.O.W.E.'s shared IVs, from the trainer's skill levels in
+// RAM; ok is false for games without them.
+func (s *Server) skillIVs() (gen3.Stats, bool) {
+	ts := s.prof.ROWETrainerSkills
+	if ts == nil {
+		return gen3.Stats{}, false
+	}
+	addr, err := ts.Levels.Resolve(s.read)
+	if err != nil {
+		return gen3.Stats{}, false
+	}
+	b, err := s.read(addr, 32)
+	if err != nil {
+		return gen3.Stats{}, false
+	}
+	return gen3.ROWESkillIVs(b), true
+}
+
 // scaledLevel is the level R.O.W.E. reports for every Pokémon when its
 // level scaling option is on (see profile.ROWELevelScaling); ok is false
 // when it's off or the profile doesn't have it.
