@@ -406,3 +406,34 @@ func roweEvolution(method, param int, item, move, species, typeName, area func(i
 	}
 	return fmt.Sprintf("Special condition (method %d)", method)
 }
+
+// Ability names the ability a Pokémon has from its species and ability
+// slot: 0 the first, 1 the second (or the first, for species with one),
+// 2 the hidden ability (games that have them). "" if unknown.
+func (t SpeciesTables) Ability(read ReadMemory, species, slot int) string {
+	size := baseStatsSize
+	if t.Format == "rowe" {
+		size = roweSpeciesSize
+	}
+	b, err := read(t.BaseStats+uint32(species*size), size)
+	if err != nil {
+		return ""
+	}
+	abilities, hidden := []int{int(b[22]), int(b[23])}, int(b[26])
+	if t.Format == "rowe" {
+		le := binary.LittleEndian
+		abilities, hidden = []int{int(le.Uint16(b[0x1E:])), int(le.Uint16(b[0x20:]))}, int(le.Uint16(b[0x24:]))
+	}
+	id := abilities[0]
+	switch {
+	case slot == 2 && t.HiddenAbility && hidden != 0:
+		id = hidden
+	case slot == 1 && abilities[1] != 0:
+		id = abilities[1]
+	}
+	if id == 0 {
+		return ""
+	}
+	name, _ := t.fixedName(read, t.AbilityNames, t.AbilityNameLen, id)
+	return name
+}

@@ -700,6 +700,17 @@ func (rc *romContext) mon(p *gen3.Pokemon, boxed bool) *SaveMon {
 	}
 	m := &SaveMon{Pokemon: p, MoveNames: make([]string, len(p.Moves)), Boxed: boxed}
 	m.SpeciesName, _ = rc.names.Species(p.Species)
+	if p.Ability == 0 && !p.IsEgg && rc.prof.SpeciesData != nil && rc.prof.Experience != nil {
+		if rc.species == nil {
+			if t, err := speciesTables(rc.prof, rc.rom.Read); err == nil {
+				t.AreaName = rc.sectionName
+				rc.species = t
+			}
+		}
+		if rc.species != nil {
+			m.AbilityName = rc.species.Ability(rc.rom.Read, p.Species, p.AbilitySlot)
+		}
+	}
 	if p.HeldItem != 0 {
 		m.ItemName, _ = rc.names.Item(p.HeldItem)
 	}

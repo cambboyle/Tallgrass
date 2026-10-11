@@ -90,6 +90,7 @@ type Server struct {
 	// Built on first use from ROM pointers, and dropped when the game
 	// disconnects. Only the poller goroutine touches these.
 	wild     *gen3.Wild
+	species  *gen3.SpeciesTables // for ability names; nil until needed
 	national *gen3.National
 	levels   *gen3.Levels
 	mapNames uint32
@@ -233,6 +234,7 @@ func (s *Server) resetGameCaches() {
 	s.names.Reset()
 	s.resetSprites()
 	s.wild, s.national, s.levels, s.mapNames = nil, nil, nil, 0
+	s.species = nil
 	s.lastPC = time.Time{}
 }
 
@@ -336,8 +338,27 @@ func (s *Server) member(mon *gen3.Pokemon) *Member {
 		m.MoveNames[i], err = s.names.Move(move.ID)
 		logErr("move", err)
 	}
+	if mon.Ability == 0 && !mon.IsEgg {
+		m.AbilityName = s.abilityName(mon)
+	}
 	m.Sprite = s.sprite(mon)
 	return m
+}
+
+// abilityName names a Gen 3 Pokémon's ability from its species and slot,
+// for games whose profile has species data.
+func (s *Server) abilityName(mon *gen3.Pokemon) string {
+	if s.prof.SpeciesData == nil || s.prof.Experience == nil {
+		return ""
+	}
+	if s.species == nil {
+		t, err := speciesTables(s.prof, s.read)
+		if err != nil {
+			return ""
+		}
+		s.species = t
+	}
+	return s.species.Ability(s.read, mon.Species, mon.AbilitySlot)
 }
 
 // sprite returns the URL of a party Pokémon's sprite.
