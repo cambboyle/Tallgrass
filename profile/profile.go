@@ -109,6 +109,9 @@ type SaveFile struct {
 	Boxes      int  `json:"boxes"`      // boxes we can read, stored back to back
 	TotalBoxes int  `json:"totalBoxes"` // boxes the game has
 	BoxNames   Addr `json:"boxNames"`   // offset of box 1's name in PC storage
+	// BoxNamesInOrder: every box's name follows the last (ROWE), instead of
+	// CFRU's boxes 15+ stored before box 1's name in reverse.
+	BoxNamesInOrder bool `json:"boxNamesInOrder"`
 	// Boxes past Boxes that a hack keeps elsewhere, and the extra sectors
 	// (outside both save slots) some of them use.
 	ExtraBoxes   []BoxGroup `json:"extraBoxes"`
@@ -158,6 +161,11 @@ type Experience struct {
 	BaseStats Ref `json:"baseStats"` // 28 bytes per species, growth rate at 19
 	Table     Ref `json:"table"`     // u32 totals, one row per growth rate
 	RowLength int `json:"rowLength"` // levels per row: vanilla 101
+	// Non-vanilla species data: record size and growth rate offset, and a
+	// species whose growth rate every species shares (ROWE: 64, 0x1B, 10).
+	BaseStatsSize       int `json:"baseStatsSize"`
+	GrowthOffset        int `json:"growthOffset"`
+	SharedGrowthSpecies int `json:"sharedGrowthSpecies"`
 }
 
 type Trainer struct {

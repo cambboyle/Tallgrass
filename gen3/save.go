@@ -21,6 +21,7 @@ const (
 
 // SaveLayout describes how a game packs its save.
 type SaveLayout struct {
+	PartyFormat    string // "" or "rowe" (see Save.PartyFormat)
 	Signature      uint32 // footer signature; 0 means vanilla's 0x08012025 (Unbound uses 0x01121999)
 	PartyOffset    int    // party in SaveBlock1, count 4 bytes before; 0 means FireRed's 0x38
 	SectorDataSize int    // vanilla 0xF80; CFRU hacks use 0xFF0
@@ -38,6 +39,7 @@ type SaveLayout struct {
 // Save is one slot of a save file, reassembled.
 type Save struct {
 	PartyOffset int    // where the party is in Block1 (FireRed 0x38, Emerald 0x238)
+	PartyFormat string // "" (100-byte records) or "rowe" (76-byte)
 	Counter     uint32 // increments on every in-game save
 	Block2      []byte // trainer
 	Block1      []byte // world, party, items
@@ -111,7 +113,7 @@ func parseSlot(data []byte, layout SaveLayout) (*Save, error) {
 		return out, nil
 	}
 
-	s := &Save{Counter: counter, PartyOffset: layout.PartyOffset}
+	s := &Save{Counter: counter, PartyOffset: layout.PartyOffset, PartyFormat: layout.PartyFormat}
 	var err error
 	if s.Block2, err = join(0, 0, layout.Block2Size); err != nil {
 		return nil, err
@@ -149,9 +151,13 @@ func (s *Save) Party(encrypted bool) ([]*Pokemon, error) {
 		at = 0x38
 	}
 	count := min(int(s.Block1[at-4]), 6)
+	size := PartySize
+	if s.PartyFormat == "rowe" {
+		size = ROWEPartySize
+	}
 	var party []*Pokemon
 	for i := 0; i < count; i++ {
-		p, err := Decode(s.Block1[at+i*PartySize:], encrypted)
+		p, err := DecodeAs(s.PartyFormat, s.Block1[at+i*size:at+(i+1)*size], encrypted)
 		if err != nil {
 			return nil, err
 		}
@@ -173,8 +179,11 @@ type BoxFormat struct {
 }
 
 func (f BoxFormat) decode(b []byte) (*Pokemon, error) {
-	if f.Size == CompressedSize {
+	switch f.Size {
+	case CompressedSize:
 		return DecodeCompressed(b)
+	case ROWEBoxSize:
+		return DecodeROWE(b)
 	}
 	return Decode(b, f.Encrypted)
 }
@@ -236,8 +245,18 @@ func (s *Save) BoxAt(block string, offset int, format BoxFormat) ([]*Pokemon, er
 }
 
 func (s *Save) BoxName(box, namesOffset int) string {
+	return s.boxName(box, namesOffset, false)
+}
+
+// BoxNameInOrder reads box names stored one after another for every box
+// (ROWE's 21), without CFRU's reversed names from box 15.
+func (s *Save) BoxNameInOrder(box, namesOffset int) string {
+	return s.boxName(box, namesOffset, true)
+}
+
+func (s *Save) boxName(box, namesOffset int, inOrder bool) string {
 	off := namesOffset + box*9
-	if box >= 14 {
+	if box >= 14 && !inOrder {
 		off = namesOffset - (box-13)*9
 	}
 	if off < 0 || off+9 > len(s.Storage) {

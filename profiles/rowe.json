@@ -59,5 +59,36 @@
     "seen": "[0x03004B7C]+0x3320",
     "flagBytes": 188,
     "speciesToNational": "[0x0809B0DC]"
+  },
+  "saveFile": {
+    "sectorDataSize": "0xF80",
+    "verifyChecksums": false,
+    "partyOffset": "0x238",
+    "boxMonSize": 52,
+    "boxes": 21,
+    "totalBoxes": 21,
+    "boxNames": "0x7FFC",
+    "boxNamesInOrder": true,
+    "dexSeen": {
+      "block": 1,
+      "offset": "0x3320"
+    },
+    "dexCaught": {
+      "block": 1,
+      "offset": "0x33DC"
+    },
+    "ram": {
+      "saveBlock1": "[0x03004B7C]",
+      "saveBlock2": "[0x03004B80]",
+      "storage": "[0x03004B84]"
+    }
+  },
+  "experience": {
+    "baseStats": "0x084F8028",
+    "table": "0x084EEBA8",
+    "rowLength": 101,
+    "baseStatsSize": 64,
+    "growthOffset": 27,
+    "sharedGrowthSpecies": 10
   }
 }

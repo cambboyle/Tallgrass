@@ -411,15 +411,9 @@ func newROMContext(path, id string, prof *profile.Profile) (*romContext, error) 
 		rc.national = gen3.NewNational(read, table)
 	}
 	if exp := prof.Experience; exp != nil {
-		base, err := exp.BaseStats.Resolve(read)
-		if err != nil {
+		if rc.levels, err = newLevels(read, exp); err != nil {
 			return nil, err
 		}
-		table, err := exp.Table.Resolve(read)
-		if err != nil {
-			return nil, err
-		}
-		rc.levels = gen3.NewLevels(read, base, table, exp.RowLength)
 	}
 	if loc := prof.Location; loc != nil {
 		if rc.mapNames, err = loc.MapNames.Resolve(read); err != nil {
@@ -537,9 +531,11 @@ func (s *Server) handleBoxes(w http.ResponseWriter, r *http.Request) {
 		return b
 	}
 	save := &gen3.Save{
-		Block2:  read(sf.RAM.SaveBlock2, size),
-		Block1:  read(sf.RAM.SaveBlock1, 4*size),
-		Storage: read(sf.RAM.Storage, 9*size),
+		PartyOffset: int(sf.PartyOffset),
+		PartyFormat: rc.prof.PokemonFormat,
+		Block2:      read(sf.RAM.SaveBlock2, size),
+		Block1:      read(sf.RAM.SaveBlock1, 4*size),
+		Storage:     read(sf.RAM.Storage, 9*size),
 	}
 	if len(sf.ExtraSectors) > 0 && sf.RAM.Extra.Addr != 0 {
 		save.Extra = read(sf.RAM.Extra, len(sf.ExtraSectors)*size)
@@ -549,8 +545,22 @@ func (s *Server) handleBoxes(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// The save block's party copy is only updated when the game saves, so
+	// use the live party (as the Party page does).
+	prof := rc.prof
+	partyRaw, partyErr := s.read(uint32(prof.PartyAddress), prof.PartySlots*prof.PokemonSize)
+
 	rc.mu.Lock()
 	view, err := rc.view(save)
+	if err == nil && partyErr == nil {
+		view.Party = []*SaveMon{}
+		for slot := 0; slot < prof.PartySlots; slot++ {
+			p, err := gen3.DecodeAs(prof.PokemonFormat, partyRaw[slot*prof.PokemonSize:(slot+1)*prof.PokemonSize], prof.EncryptedData)
+			if err == nil && p != nil {
+				view.Party = append(view.Party, rc.mon(p, false))
+			}
+		}
+	}
 	rc.mu.Unlock()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
@@ -568,8 +578,25 @@ func (rc *romContext) layout() gen3.SaveLayout {
 		PartyOffset:    int(sf.PartyOffset),
 		SectorDataSize: int(sf.SectorDataSize), VerifyChecksums: sf.VerifyChecksums,
 		Block2Size: int(sf.Block2Size), Block1Size: int(sf.Block1Size), StorageSize: int(sf.StorageSize),
-		ExtraSectors: sf.ExtraSectors,
+		ExtraSectors: sf.ExtraSectors, PartyFormat: rc.prof.PokemonFormat,
 	}
+}
+
+// newLevels builds the level-from-experience calculator a profile describes.
+func newLevels(read gen3.ReadMemory, exp *profile.Experience) (*gen3.Levels, error) {
+	base, err := exp.BaseStats.Resolve(read)
+	if err != nil {
+		return nil, err
+	}
+	table, err := exp.Table.Resolve(read)
+	if err != nil {
+		return nil, err
+	}
+	l := gen3.NewLevels(read, base, table, exp.RowLength).WithRecord(exp.BaseStatsSize, exp.GrowthOffset)
+	if exp.SharedGrowthSpecies != 0 {
+		l.SameGrowthAs(exp.SharedGrowthSpecies)
+	}
+	return l, nil
 }
 
 // readBox reads box n (from 0): PC storage for the first sf.Boxes, then any
@@ -616,7 +643,11 @@ func (rc *romContext) view(save *gen3.Save) (*SaveView, error) {
 			v.HiddenBoxes++ // a box the game has that we can't find yet
 			continue
 		}
-		box := SaveBox{Name: save.BoxName(b, int(sf.BoxNames)), Mons: make([]*SaveMon, len(mons))}
+		name := save.BoxName(b, int(sf.BoxNames))
+		if sf.BoxNamesInOrder {
+			name = save.BoxNameInOrder(b, int(sf.BoxNames))
+		}
+		box := SaveBox{Name: name, Mons: make([]*SaveMon, len(mons))}
 		for i, p := range mons {
 			if p != nil {
 				box.Mons[i] = rc.mon(p, true)
@@ -633,6 +664,9 @@ func (rc *romContext) view(save *gen3.Save) (*SaveView, error) {
 
 // mon adds names, a sprite and (for boxed Pokémon) the level.
 func (rc *romContext) mon(p *gen3.Pokemon, boxed bool) *SaveMon {
+	if err := gen3.ResolveForm(rc.rom.Read, uint32(rc.prof.FormSpecies), p); err != nil {
+		log.Printf("form of species %d: %v", p.Species, err)
+	}
 	m := &SaveMon{Pokemon: p, MoveNames: make([]string, len(p.Moves)), Boxed: boxed}
 	m.SpeciesName, _ = rc.names.Species(p.Species)
 	if p.HeldItem != 0 {

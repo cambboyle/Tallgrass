@@ -151,16 +151,10 @@ func (s *Server) pcMons() ([]tracker.PartyMon, error) {
 		return nil, nil
 	}
 	if s.levels == nil {
-		exp := s.prof.Experience
-		base, err := exp.BaseStats.Resolve(s.read)
-		if err != nil {
+		var err error
+		if s.levels, err = newLevels(s.read, s.prof.Experience); err != nil {
 			return nil, err
 		}
-		table, err := exp.Table.Resolve(s.read)
-		if err != nil {
-			return nil, err
-		}
-		s.levels = gen3.NewLevels(s.read, base, table, exp.RowLength)
 	}
 
 	format := gen3.BoxFormat{Size: sf.BoxMonSize, Encrypted: s.prof.EncryptedData}
@@ -204,6 +198,9 @@ func (s *Server) pcMons() ([]tracker.PartyMon, error) {
 		for _, p := range box {
 			if p == nil {
 				continue
+			}
+			if err := gen3.ResolveForm(s.read, uint32(s.prof.FormSpecies), p); err != nil {
+				return nil, err
 			}
 			m := tracker.PartyMon{Personality: p.Personality, Species: p.Species, Nickname: p.Nickname,
 				IsEgg: p.IsEgg, MetSection: p.MetLocation}
