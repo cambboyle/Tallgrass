@@ -26,6 +26,10 @@ import (
 var version = "dev"
 
 func main() {
+	if len(os.Args) > 1 && os.Args[1] == "sync" {
+		syncMain(os.Args[2:])
+		return
+	}
 	host := flag.String("host", "127.0.0.1:55355", "RetroArch network command address")
 	profilePath := flag.String("profile", "radical-red", "profile to use where the running game can't be detected (not Linux), or a path to a .json profile")
 	listen := flag.String("listen", ":8080", "dashboard address")

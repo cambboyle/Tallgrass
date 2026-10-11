@@ -11,6 +11,7 @@ const sections = [
   ["setup", "Set up your game"],
   ["dashboard", "The dashboard"],
   ["pin", "Lock it with a PIN"],
+  ["editing", "Edit saves on your computer"],
   ["account", "Link to an account"],
   ["updates", "Updates"],
   ["troubleshooting", "Troubleshooting"],
@@ -109,9 +110,9 @@ export default function Guide() {
           <dt>Saves</dt>
           <dd>
             Every change to your save file is kept as a version. Download any version, or restore it: Tallgrass backs up the
-            current save first, and refuses while a game is running (the emulator would overwrite it on exit). To move
-            Pokémon with a save editor such as OpenHome, download the latest version, edit it, and use{" "}
-            <strong>Upload edited save</strong>; it&apos;s checked and the current save is backed up first.
+            current save first, and refuses while a game is running (the emulator would overwrite it on exit). To edit a
+            save on your computer, download the latest version, edit it, and use <strong>Upload edited save</strong>; it&apos;s
+            checked and the current save is backed up first. Or let <a href="#editing">tallgrass sync</a> do it for you.
           </dd>
           <dt>Library</dt>
           <dd>Your ROMs by system, with whether Tallgrass supports each one and which have saves.</dd>
@@ -131,11 +132,43 @@ export default function Guide() {
         </p>
       </section>
 
+      <section className="card stack" id="editing">
+        <h2>Edit saves on your computer</h2>
+        <p>
+          To move Pokémon between games with <a href="https://github.com/andrewbenington/OpenHome">OpenHome</a> (or edit
+          them with PKHeX), run <code>tallgrass sync</code> on your computer. It keeps a folder there in step with your
+          device&apos;s saves: new progress on the device is copied down within seconds, and when you save in OpenHome the
+          file is uploaded back. The device checks it, backs up the current save first, and waits while that game is
+          running.
+        </p>
+        <p>On a Mac (Apple silicon; use <code>darwin-amd64</code> for Intel), in Terminal:</p>
+        <Cmd>{`curl -fsSLo tallgrass https://github.com/cambboyle/Tallgrass/releases/latest/download/tallgrass-darwin-arm64
+chmod +x tallgrass
+./tallgrass sync 192.168.0.20`}</Cmd>
+        <p>
+          On Windows, download <code>tallgrass-windows-amd64.exe</code> from the{" "}
+          <a href="https://github.com/cambboyle/Tallgrass/releases/latest">latest release</a> and run{" "}
+          <code>tallgrass-windows-amd64.exe sync 192.168.0.20</code> in a terminal. Use your device&apos;s address (the one
+          you open the dashboard on). If the dashboard has a PIN, it asks for it once.
+        </p>
+        <p>
+          Saves land in a <strong>Tallgrass Saves</strong> folder in your home folder (<code>-dir</code> picks another).
+          In OpenHome&apos;s saves window, add that folder under <strong>Save Folders</strong> and your saves appear under{" "}
+          <strong>Suggested</strong>. Keep sync running while you edit.
+        </p>
+        <p className="muted small">
+          Close the game on the device before editing, so you edit its latest save. If a save changes on both sides
+          anyway, the device&apos;s copy wins and yours is kept in <code>Conflicts</code>. Every upload is backed up on the
+          device first, so nothing is lost either way.
+        </p>
+      </section>
+
       <section className="card stack" id="account">
         <h2>Link to an account</h2>
         <p>
-          Everything above works without an account. Linking a device to a Tallgrass account is optional, and is what
-          upcoming features like syncing backups will use. On the dashboard&apos;s <strong>Account</strong> page, choose{" "}
+          Everything above works without an account. Linking a device to a Tallgrass account is optional; it lets you
+          switch on <strong>Cloud backups</strong> (Account page), which copies your save backups and Journey history to
+          your account every 10 minutes, to download from the website if the device is lost. On the dashboard&apos;s <strong>Account</strong> page, choose{" "}
           <strong>Link this device</strong>; it shows a short code. <Link href="/link">Enter that code here</Link> while
           signed in, and the device is linked. You can unlink devices from your <Link href="/account">account page</Link>.
         </p>

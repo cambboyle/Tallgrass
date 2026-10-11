@@ -99,7 +99,8 @@ Launch supports three games, done properly: **Radical Red, HeartGold Generations
 
 ### M5: Bank
 - [x] **Bridge first** (2026-10-11): download a save from the agent → edit it in OpenHome → upload it back (Saves → Upload edited save, `POST /api/saves/upload`). The agent checks it's a save of the same kind, backs up first and refuses while the game runs; bare 512 KB DS saves get DraStic's footer back.
-- [ ] **Deeper integration:** OpenHome talks to the agent directly (browse and pull/push device saves without manual files). Ideally contributed upstream; otherwise in a fork.
+- [x] **Sync folder** (2026-10-11): `tallgrass sync <device>` on a Mac/Windows/Linux computer keeps a folder in step with the device's saves, laid out so OpenHome's Suggested saves finds them; edits saved there are uploaded back (backup first, waits while the game runs). Needs no OpenHome changes (its plugins only supply sprites).
+- [ ] **Deeper integration:** OpenHome talks to the agent directly (a "Tallgrass device" save source). Ideally contributed upstream; otherwise in a fork.
 - [ ] **Account-linked bank:** an OpenHome bank stored in the user's cloud account, so it follows them between devices.
 
 ### M6: Consumer packaging
