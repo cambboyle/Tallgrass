@@ -24,7 +24,10 @@ type Trainer struct {
 	Double bool         `json:"double,omitempty"`
 	Items  []string     `json:"items,omitempty"` // what they use in battle
 	Party  []TrainerMon `json:"party"`
-	Areas  []string     `json:"areas,omitempty"` // where they stand, when found
+	// OtherParty is a second team some hacks give a trainer (R.O.W.E.,
+	// likely its harder mode); when the game uses it isn't known.
+	OtherParty []TrainerMon `json:"otherParty,omitempty"`
+	Areas      []string     `json:"areas,omitempty"` // where they stand, when found
 	// Maps where they stand, as "group.num"; used to list a map's trainers.
 	Maps []string `json:"maps,omitempty"`
 }
@@ -183,8 +186,8 @@ func scriptTrainers(read ReadMemory, script uint32) []int {
 
 // allROWE reads Pokémon R.O.W.E.'s trainers: 64-byte records (flags,
 // class, music, pic, name[12] at 4, items from 0x16, AI at 0x24, party
-// pointer at 0x28, party size at 0x3C; a second, harder party at 0x38 is
-// left out). Party entries are 40 bytes: a level byte the game replaces
+// pointer at 0x28, party size at 0x3C; a second team at 0x38, size 0x3D,
+// goes in OtherParty). Party entries are 40 bytes: a level byte the game replaces
 // with a scaled level at battle time, species at 0xA, held item at 0xE,
 // and a pool of up to six moves from 0x12 that the game picks from.
 func (t TrainerTables) allROWE(read ReadMemory, names *Names) ([]Trainer, error) {
@@ -214,31 +217,43 @@ func (t TrainerTables) allROWE(read ReadMemory, names *Names) ([]Trainer, error)
 				}
 			}
 		}
-		b, err := read(party, count*entry)
-		if err != nil {
-			return nil, fmt.Errorf("trainer %d's party: %w", id, err)
-		}
-		for i := 0; i < count; i++ {
-			p := b[i*entry:]
-			m := TrainerMon{Species: int(le.Uint16(p[0xA:]))}
-			if m.Species == 0 {
-				continue
+		readParty := func(at uint32, n int) ([]TrainerMon, error) {
+			mons := []TrainerMon{}
+			b, err := read(at, n*entry)
+			if err != nil {
+				return nil, fmt.Errorf("trainer %d's party: %w", id, err)
 			}
-			m.SpeciesName, _ = names.Species(m.Species)
-			if item := int(le.Uint16(p[0xE:])); item != 0 {
-				if name, _ := names.Item(item); !strings.Contains(name, "?") {
-					m.Item = name
+			for i := 0; i < n; i++ {
+				p := b[i*entry:]
+				m := TrainerMon{Species: int(le.Uint16(p[0xA:]))}
+				if m.Species == 0 {
+					continue
 				}
-			}
-			for k := 0; k < 6; k++ {
-				if mv := int(le.Uint16(p[0x12+k*2:])); mv != 0 {
-					name, _ := names.Move(mv)
-					if !slices.Contains(m.Moves, name) {
-						m.Moves = append(m.Moves, name)
+				m.SpeciesName, _ = names.Species(m.Species)
+				if item := int(le.Uint16(p[0xE:])); item != 0 {
+					if name, _ := names.Item(item); !strings.Contains(name, "?") {
+						m.Item = name
 					}
 				}
+				for k := 0; k < 6; k++ {
+					if mv := int(le.Uint16(p[0x12+k*2:])); mv != 0 {
+						name, _ := names.Move(mv)
+						if !slices.Contains(m.Moves, name) {
+							m.Moves = append(m.Moves, name)
+						}
+					}
+				}
+				mons = append(mons, m)
 			}
-			tr.Party = append(tr.Party, m)
+			return mons, nil
+		}
+		if tr.Party, err = readParty(party, count); err != nil {
+			return nil, err
+		}
+		if other, n := le.Uint32(e[0x38:]), int(e[0x3D]); isROMPointer(other) && n > 0 && n <= 6 {
+			if tr.OtherParty, err = readParty(other, n); err != nil {
+				return nil, err
+			}
 		}
 		if len(tr.Party) > 0 {
 			out = append(out, tr)

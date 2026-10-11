@@ -53,6 +53,7 @@ Unused species slots (blank or placeholder names) are left out.
 | `double` | A double battle. |
 | `items` | Items the trainer uses in battle. |
 | `party` | `{species, speciesName, level, item, moves}`. Empty `moves` means the Pokémon uses its level-up moves. `level` 0 means the game sets it when the battle starts (R.O.W.E. scales trainers to the player); there `moves` is a pool of up to six the game picks from. |
+| `otherParty` | Optional: a second team the hack gives this trainer (R.O.W.E.), same shape as `party`; when the game uses it isn't known. |
 | `areas`, `maps` | Where the trainer is battled, as area names and map IDs. Absent when unknown (battle facilities, some scripted fights, rematch-only teams). |
 
 ### Map

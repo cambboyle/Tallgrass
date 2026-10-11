@@ -129,7 +129,7 @@ func (t SpeciesTables) readEggMoves(read ReadMemory, names *Names, species int, 
 
 // readTMByteList reads R.O.W.E.-style TM compatibility: a pointer per
 // species to u8 TM numbers (0-based) ending 0xFF. A species without a list
-// (a form, mostly) has a null pointer and is shown with none.
+// (a form, mostly) uses its base species' list.
 func (t SpeciesTables) readTMByteList(read ReadMemory, names *Names, species int, info *SpeciesInfo) error {
 	if t.TMMoves == 0 || t.TMLearnsets == 0 || t.TMCount == 0 {
 		return nil
@@ -139,6 +139,17 @@ func (t SpeciesTables) readTMByteList(read ReadMemory, names *Names, species int
 		return err
 	}
 	list := binary.LittleEndian.Uint32(p)
+	if list == 0 && t.FormSpecies != 0 {
+		// A form without its own list uses its base species' (the first
+		// entry of its form list), as the game does.
+		if f, err := read(t.FormSpecies+uint32(species*4), 4); err == nil && binary.LittleEndian.Uint32(f) != 0 {
+			if base, err := read(binary.LittleEndian.Uint32(f), 2); err == nil {
+				if p, err := read(t.TMLearnsets+uint32(binary.LittleEndian.Uint16(base))*4, 4); err == nil {
+					list = binary.LittleEndian.Uint32(p)
+				}
+			}
+		}
+	}
 	if list == 0 {
 		return nil
 	}

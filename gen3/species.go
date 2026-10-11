@@ -43,6 +43,7 @@ type SpeciesTables struct {
 	LearnsetEntry int    // bytes per level-up move; 4 = u16 move, u16 level
 	TMByteLists   bool   // TMLearnsets points per species at u8 TM numbers ending 0xFF
 	TMCount       int    // TMs in TMMoves (with TMByteLists)
+	FormSpecies   uint32 // per-species form lists (see ResolveForm); a form's base is its list's first entry
 }
 
 // SpeciesInfo is what a species page shows.

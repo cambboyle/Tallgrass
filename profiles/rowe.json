@@ -37,7 +37,8 @@
       2,
       3,
       4,
-      5
+      5,
+      6
     ],
     "clockHour": "0x03004ADA",
     "periods": [
@@ -117,5 +118,9 @@
     "tmByteLists": true,
     "tmCount": 120,
     "eggMoves": "[0x080A1E08]"
+  },
+  "vars": "[0x03004B7C]+0x1BCA",
+  "roweLevelScaling": {
+    "table": "0x0937BC80"
   }
 }

@@ -101,13 +101,19 @@ func TestRadicalRedPCCatch(t *testing.T) {
 	party := make([]byte, 600)
 	party[32] = 155 // a party, so the game counts as running
 	party[84] = 9
-	sb2 := []byte{0xBD, 0xD5, 0xE1, 0xD9, 0xE6, 0xE3, 0xE2, 0xFF, 0, 0, 0xFC, 0xFA, 0xCC, 0x18}
+	// Full-size save blocks and the extra boxes' RAM: the PC read covers
+	// boxes 20–25 too (SaveBlock1, SaveBlock2 and 0x0203C038).
+	sb2 := make([]byte, 0xFF0)
+	copy(sb2, []byte{0xBD, 0xD5, 0xE1, 0xD9, 0xE6, 0xE3, 0xE2, 0xFF, 0, 0, 0xFC, 0xFA, 0xCC, 0x18})
+	sb1 := make([]byte, 4*0xFF0)
+	sb1[4], sb1[5] = 3, 19
 	ptr := func(a uint32) []byte { return binary.LittleEndian.AppendUint32(nil, a) }
 	mem := map[uint32][]byte{
 		0x08000000: rom, 0x02024284: party,
-		0x03005008: ptr(0x02025000), 0x02025004: {3, 19}, 0x02036E10: {0x65}, 0x03005EA6: {12},
+		0x03005008: ptr(0x02040000), 0x02040000: sb1, 0x02036E10: {0x65}, 0x03005EA6: {12},
 		0x0300500C: ptr(0x02024588), 0x02024588: sb2,
 		0x03005010: ptr(0x02029314), 0x02029314: storage,
+		0x0203C038: make([]byte, 2*0xFF0),
 		0x020258E0: make([]byte, 164), 0x0202583C: make([]byte, 164),
 	}
 	read := func(addr uint32, n int) ([]byte, error) {

@@ -28,6 +28,7 @@ export type Trainer = {
   double?: boolean;
   items?: string[];
   party: TrainerMon[];
+  otherParty?: TrainerMon[]; // a second team some hacks give (R.O.W.E.)
   areas?: string[];
   maps?: string[];
 };

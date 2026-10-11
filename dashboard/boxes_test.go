@@ -30,7 +30,7 @@ func TestLiveBoxes(t *testing.T) {
 	prof, _ := profile.Load("radical-red")
 	all, _ := profile.All()
 	data, _ := os.ReadFile(savePath)
-	save, err := gen3.ParseSave(data, gen3.SaveLayout{SectorDataSize: 0xFF0})
+	save, err := gen3.ParseSave(data, gen3.SaveLayout{SectorDataSize: 0xFF0, ExtraSectors: prof.SaveFile.ExtraSectors})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -38,8 +38,9 @@ func TestLiveBoxes(t *testing.T) {
 	mem := map[uint32][]byte{
 		0x02024284: save.Block1[0x38 : 0x38+600], // party, so the poller sees a game
 		0x03005008: ptr(0x02025000), 0x02025000: save.Block1,
-		0x0300500C: ptr(0x02024000), 0x02024000: save.Block2,
+		0x0300500C: ptr(0x02020000), 0x02020000: save.Block2, // clear of the party at 0x02024284
 		0x03005010: ptr(0x02029000), 0x02029000: save.Storage,
+		0x0203C038: save.Extra, // boxes 20–22
 	}
 	read := func(addr uint32, n int) ([]byte, error) {
 		for base, b := range mem {
@@ -61,7 +62,7 @@ func TestLiveBoxes(t *testing.T) {
 		t.Fatalf("%d %s", rec.Code, rec.Body)
 	}
 	if v.Version != "live" || v.Trainer.Name != "Cameron" || len(v.Party) == 0 || v.Party[0].SpeciesName != "Cyndaquil" ||
-		len(v.Boxes) != 19 || v.Boxes[0].Name != "Box1" || v.Boxes[18].Name != "Box19" || v.HiddenBoxes != 6 {
+		len(v.Boxes) != 25 || v.Boxes[0].Name != "Box1" || v.Boxes[24].Name != "Box25" || v.HiddenBoxes != 0 {
 		t.Errorf("view = %+v", v)
 	}
 }

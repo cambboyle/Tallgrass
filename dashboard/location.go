@@ -118,6 +118,73 @@ func (s *Server) location(seen, caught []byte) (*Location, error) {
 	return loc, nil
 }
 
+// variable reads one of the game's variables (0x4000 and up); 0 if the
+// profile has no vars.
+func (s *Server) variable(n int) (int, error) {
+	if s.prof.Vars.IsZero() {
+		return 0, nil
+	}
+	addr, err := s.prof.Vars.Resolve(s.read)
+	if err != nil {
+		return 0, err
+	}
+	b, err := s.read(addr+uint32(2*(n-0x4000)), 2)
+	if err != nil {
+		return 0, err
+	}
+	return int(b[0]) | int(b[1])<<8, nil
+}
+
+// scaledLevel is the level R.O.W.E. reports for every Pokémon when its
+// level scaling option is on (see profile.ROWELevelScaling); ok is false
+// when it's off or the profile doesn't have it.
+func (s *Server) scaledLevel() (level int, ok bool, err error) {
+	ls := s.prof.ROWELevelScaling
+	if ls == nil {
+		return 0, false, nil
+	}
+	on, err := s.flag(0x2D)
+	if err != nil {
+		return 0, false, err
+	}
+	fixed, err := s.flag(0xE3A)
+	if err != nil || (!on && !fixed) {
+		return 0, false, err
+	}
+	if fixed && !on {
+		return 5, true, nil
+	}
+	stage, err := s.variable(0x4061)
+	if err != nil {
+		return 0, false, err
+	}
+	if f, _ := s.flag(0xDEE); f {
+		stage = 18
+	} else if f, _ := s.flag(0xCD4); f {
+		stage = 17
+	}
+	if stage == 18 {
+		return 100, true, nil
+	}
+	difficulty, err := s.variable(0x407A)
+	if err != nil {
+		return 0, false, err
+	}
+	cap := func(kind int) (int, error) {
+		b, err := s.read(uint32(ls.Table)+uint32(difficulty*304+kind*38+stage*2), 2)
+		if err != nil {
+			return 0, err
+		}
+		return int(b[0]) | int(b[1])<<8, nil
+	}
+	a, err := cap(2)
+	if err != nil {
+		return 0, false, err
+	}
+	b, err := cap(5)
+	return a + b, err == nil, err
+}
+
 // flag reads one of the game's flags; false if the profile has no flags.
 func (s *Server) flag(n int) (bool, error) {
 	if s.prof.Flags.IsZero() {
@@ -183,8 +250,8 @@ func newWild(read gen3.ReadMemory, cfg *profile.WildEncounters) (*gen3.Wild, err
 		periods = append(periods, gen3.Period{Name: p.Name, Headers: addr, FromHour: p.FromHour, ToHour: p.ToHour, LandSlot: land})
 	}
 	w := gen3.NewWild(read, main, periods)
-	if cfg.HeaderSize > 0 && (len(cfg.Slots) == 4 || len(cfg.Slots) == 5) {
-		l := gen3.WildLayout{HeaderSize: cfg.HeaderSize, Slots: [5]int{-1, -1, -1, -1, -1}}
+	if cfg.HeaderSize > 0 && len(cfg.Slots) >= 4 && len(cfg.Slots) <= 6 {
+		l := gen3.WildLayout{HeaderSize: cfg.HeaderSize, Slots: [6]int{-1, -1, -1, -1, -1, -1}}
 		copy(l.Slots[:], cfg.Slots)
 		w.WithLayout(l)
 	}

@@ -9,19 +9,31 @@ export default function TrainerCard({ slug, t }: { slug: string; t: Trainer }) {
         <span className="mono small muted">#{t.id}</span>
       </div>
       {t.items?.length ? <p className="small muted">Uses {t.items.join(", ")}</p> : null}
-      <div className="table-wrap">
-        <table>
-          <tbody>
-            {t.party.map((m, i) => (
-              <tr key={i}>
-                <td style={{ width: "30%" }}><Link href={`/games/${slug}/pokemon/${m.species}`}>{m.speciesName}</Link></td>
-                <td className="num" style={{ width: 70 }}>{m.level ? `Lv ${m.level}` : "Scales"}</td>
-                <td className="small">{m.item && <span className="muted">@ {m.item}</span>}{m.item && m.moves?.length ? " · " : ""}{m.moves?.join(", ")}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <Team slug={slug} party={t.party} />
+      {t.otherParty?.length ? (
+        <>
+          <p className="small muted">Other team (used in another mode)</p>
+          <Team slug={slug} party={t.otherParty} />
+        </>
+      ) : null}
     </article>
+  );
+}
+
+function Team({ slug, party }: { slug: string; party: Trainer["party"] }) {
+  return (
+    <div className="table-wrap">
+      <table>
+        <tbody>
+          {party.map((m, i) => (
+            <tr key={i}>
+              <td style={{ width: "30%" }}><Link href={`/games/${slug}/pokemon/${m.species}`}>{m.speciesName}</Link></td>
+              <td className="num" style={{ width: 70 }}>{m.level ? `Lv ${m.level}` : "Scales"}</td>
+              <td className="small">{m.item && <span className="muted">@ {m.item}</span>}{m.item && m.moves?.length ? " · " : ""}{m.moves?.join(", ")}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }

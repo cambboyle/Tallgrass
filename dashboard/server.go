@@ -178,8 +178,15 @@ func (s *Server) Snapshot() State {
 	}
 	st.Connected = true
 
+	scaled, scaling, err := s.scaledLevel()
+	if err != nil {
+		log.Printf("level scaling: %v", err)
+	}
 	for slot := 0; slot < s.prof.PartySlots; slot++ {
 		mon, err := gen3.DecodeAs(s.prof.PokemonFormat, raw[slot*size:(slot+1)*size], s.prof.EncryptedData)
+		if mon != nil && scaling {
+			mon.Level = scaled // the game reports this level everywhere
+		}
 		if err == nil {
 			err = gen3.ResolveForm(s.read, uint32(s.prof.FormSpecies), mon)
 		}

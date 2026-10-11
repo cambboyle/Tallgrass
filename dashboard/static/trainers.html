@@ -43,6 +43,7 @@ function trainerHTML(t) {
     <span class="sub">#${t.id}</span></div>
     ${items}
     <div class="tmons">${t.party.map(monHTML).join("")}</div>
+    ${t.otherParty?.length ? `<div class="sub other-team">Other team (used in another mode)</div><div class="tmons">${t.otherParty.map(monHTML).join("")}</div>` : ""}
   </article>`;
 }
 

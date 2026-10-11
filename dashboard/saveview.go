@@ -550,12 +550,25 @@ func (s *Server) handleBoxes(w http.ResponseWriter, r *http.Request) {
 	prof := rc.prof
 	partyRaw, partyErr := s.read(uint32(prof.PartyAddress), prof.PartySlots*prof.PokemonSize)
 
+	scaled, scaling, _ := s.scaledLevel()
 	rc.mu.Lock()
 	view, err := rc.view(save)
+	if err == nil && scaling {
+		for _, b := range view.Boxes {
+			for _, m := range b.Mons {
+				if m != nil {
+					m.Level = scaled
+				}
+			}
+		}
+	}
 	if err == nil && partyErr == nil {
 		view.Party = []*SaveMon{}
 		for slot := 0; slot < prof.PartySlots; slot++ {
 			p, err := gen3.DecodeAs(prof.PokemonFormat, partyRaw[slot*prof.PokemonSize:(slot+1)*prof.PokemonSize], prof.EncryptedData)
+			if err == nil && p != nil && scaling {
+				p.Level = scaled
+			}
 			if err == nil && p != nil {
 				view.Party = append(view.Party, rc.mon(p, false))
 			}
@@ -776,7 +789,8 @@ func speciesTables(p *profile.Profile, read gen3.ReadMemory) (*gen3.SpeciesTable
 	t := &gen3.SpeciesTables{AbilityNameLen: sd.AbilityNameLength, HiddenAbility: sd.HiddenAbility,
 		CFRULearnsets: sd.CFRULearnsets, EvosPerSpecies: sd.EvolutionsPerSpecies,
 		TMLearnsetSize: sd.TMLearnsetSize, TutorLearnsetSize: sd.TutorLearnsetSize, EvoScheme: sd.EvolutionScheme,
-		Format: sd.Format, TypeNameLen: sd.TypeNameLength, LearnsetEntry: sd.LearnsetEntry, TMByteLists: sd.TMByteLists, TMCount: sd.TMCount}
+		Format: sd.Format, TypeNameLen: sd.TypeNameLength, LearnsetEntry: sd.LearnsetEntry, TMByteLists: sd.TMByteLists, TMCount: sd.TMCount,
+		FormSpecies: uint32(p.FormSpecies)}
 	for _, r := range []struct {
 		ref profile.Ref
 		out *uint32
