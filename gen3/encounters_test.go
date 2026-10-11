@@ -7,7 +7,7 @@ import (
 
 // header builds a 20-byte wild header entry.
 func header(group, num uint8, info ...uint32) []byte {
-	b := make([]byte, wildHeaderSize)
+	b := make([]byte, vanillaWild.HeaderSize)
 	b[0], b[1] = group, num
 	for i, p := range info {
 		binary.LittleEndian.PutUint32(b[4+i*4:], p)
@@ -35,7 +35,7 @@ func slotData(species ...int) []byte {
 
 func TestWildPeriodsFallBackPerMethod(t *testing.T) {
 	end := []byte{0xFF}
-	pad := make([]byte, 64*wildHeaderSize)
+	pad := make([]byte, 64*vanillaWild.HeaderSize)
 	mem := regions{
 		// Main table: map 3.19 has grass and surfing.
 		0x1000: append(append(header(3, 19, 0x2000, 0x2100), end...), pad...),

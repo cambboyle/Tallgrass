@@ -19,5 +19,39 @@
   "trainer": {
     "name": "[0x03004B80]",
     "id": "[0x03004B80]+0xA"
+  },
+  "location": {
+    "mapId": "[0x03004B7C]+0x4",
+    "mapSection": "0x02037A44",
+    "mapNames": "[0x08109D8C]",
+    "firstMapSection": 0,
+    "mapNameStride": 8,
+    "mapNameOffset": 4,
+    "mapGroups": "[0x080BEBC4]"
+  },
+  "wildEncounters": {
+    "headers": "[0x080F6100]",
+    "headerSize": 32,
+    "slots": [
+      0,
+      2,
+      3,
+      4
+    ],
+    "clockHour": "0x03004ADA",
+    "periods": [
+      {
+        "name": "Day",
+        "landSlot": 0,
+        "fromHour": 6,
+        "toHour": 18
+      },
+      {
+        "name": "Night",
+        "landSlot": 1,
+        "fromHour": 18,
+        "toHour": 6
+      }
+    ]
   }
 }

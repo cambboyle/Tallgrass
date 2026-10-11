@@ -130,22 +130,38 @@ func (s *Server) mapName(section int) (string, error) {
 
 func (s *Server) encounters(group, num uint8) ([]gen3.PeriodEncounters, error) {
 	if s.wild == nil {
-		cfg := s.prof.WildEncounters
-		main, err := cfg.Headers.Resolve(s.read)
+		w, err := newWild(s.read, s.prof.WildEncounters)
 		if err != nil {
 			return nil, err
 		}
-		var periods []gen3.Period
-		for _, p := range cfg.Periods {
-			addr, err := p.Headers.Resolve(s.read)
-			if err != nil {
-				return nil, err
-			}
-			periods = append(periods, gen3.Period{Name: p.Name, Headers: addr, FromHour: p.FromHour, ToHour: p.ToHour})
-		}
-		s.wild = gen3.NewWild(s.read, main, periods)
+		s.wild = w
 	}
 	return s.wild.ForMap(group, num)
+}
+
+// newWild builds the encounter reader a profile describes.
+func newWild(read gen3.ReadMemory, cfg *profile.WildEncounters) (*gen3.Wild, error) {
+	main, err := cfg.Headers.Resolve(read)
+	if err != nil {
+		return nil, err
+	}
+	var periods []gen3.Period
+	for _, p := range cfg.Periods {
+		addr, err := p.Headers.Resolve(read)
+		if err != nil {
+			return nil, err
+		}
+		land := -1
+		if p.LandSlot != nil {
+			land = *p.LandSlot
+		}
+		periods = append(periods, gen3.Period{Name: p.Name, Headers: addr, FromHour: p.FromHour, ToHour: p.ToHour, LandSlot: land})
+	}
+	w := gen3.NewWild(read, main, periods)
+	if cfg.HeaderSize > 0 && len(cfg.Slots) == 4 {
+		w.WithLayout(gen3.WildLayout{HeaderSize: cfg.HeaderSize, Slots: [4]int(cfg.Slots)})
+	}
+	return w, nil
 }
 
 // dexFlags reads the seen and caught flag arrays; nil if not configured.

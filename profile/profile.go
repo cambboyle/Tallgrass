@@ -190,6 +190,10 @@ type WildEncounters struct {
 	Headers   Ref      `json:"headers"`   // main wild header table
 	ClockHour Ref      `json:"clockHour"` // RTC hour byte, needed for periods
 	Periods   []Period `json:"periods"`   // time-of-day tables, if the game has them
+	// HeaderSize and Slots describe non-vanilla headers: bytes per header
+	// (20 if unset) and which pointer is land, water, rock smash, fishing.
+	HeaderSize int   `json:"headerSize"`
+	Slots      []int `json:"slots"`
 }
 
 type Period struct {
@@ -197,6 +201,9 @@ type Period struct {
 	Headers  Ref    `json:"headers"` // leave out to use only the main table
 	FromHour int    `json:"fromHour"`
 	ToHour   int    `json:"toHour"` // exclusive; may wrap past midnight
+	// LandSlot picks this period's land pointer within the main header,
+	// for games keeping day and night in one header.
+	LandSlot *int `json:"landSlot"`
 }
 
 type Pokedex struct {

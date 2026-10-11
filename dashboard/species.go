@@ -152,24 +152,16 @@ func (rc *romContext) buildIndexes() {
 	if p.WildEncounters == nil || p.Location == nil || p.Location.MapGroups.IsZero() {
 		return
 	}
-	main, err := p.WildEncounters.Headers.Resolve(read)
+	wild, err := newWild(read, p.WildEncounters)
 	if err != nil {
 		return
-	}
-	var periods []gen3.Period
-	for _, per := range p.WildEncounters.Periods {
-		addr, err := per.Headers.Resolve(read)
-		if err != nil {
-			return
-		}
-		periods = append(periods, gen3.Period{Name: per.Name, Headers: addr, FromHour: per.FromHour, ToHour: per.ToHour})
 	}
 	area := rc.areaNamer()
 	if area == nil {
 		return
 	}
 	name := func(g, n uint8) string { a, _ := area(g, n); return a }
-	if idx, err := gen3.NewWild(read, main, periods).FoundIn(name); err == nil {
+	if idx, err := wild.FoundIn(name); err == nil {
 		rc.foundIn = idx
 	} else {
 		log.Printf("%s: where-to-find index: %v", p.Name, err)

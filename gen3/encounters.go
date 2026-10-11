@@ -7,13 +7,24 @@ import (
 )
 
 // WildHeader is one map's entry in a wild encounter table: pointers to its
-// land, water, rock smash and fishing encounter lists (0 if it has none).
+// encounter lists (0 where it has none). Raw has every pointer in the
+// header; Info picks land, water, rock smash and fishing from it.
 type WildHeader struct {
 	Group, Num uint8
 	Info       [4]uint32
+	Raw        []uint32
 }
 
-const wildHeaderSize = 20
+// WildLayout describes a game's header: its size, and which of its
+// pointers are land, water, rock smash and fishing. Vanilla: 20 bytes,
+// pointers in that order. ROWE: 32 bytes, land by day and by night, water,
+// rock smash, fishing, hidden and one more.
+type WildLayout struct {
+	HeaderSize int
+	Slots      [4]int
+}
+
+var vanillaWild = WildLayout{HeaderSize: 20, Slots: [4]int{0, 1, 2, 3}}
 
 // Methods, in the order of WildHeader.Info, with each slot's chance in
 // percent. Fishing shares one list of 10 slots across the three rods.
@@ -53,6 +64,10 @@ type Period struct {
 	Headers  uint32
 	FromHour int
 	ToHour   int
+	// LandSlot, if 0 or more, is the header pointer this period's land
+	// encounters use (games keeping day and night in one header); -1 to
+	// follow the layout.
+	LandSlot int
 }
 
 func (p Period) Contains(hour int) bool {
@@ -71,6 +86,7 @@ type PeriodEncounters struct {
 // Not safe for concurrent use.
 type Wild struct {
 	read    ReadMemory
+	layout  WildLayout
 	main    uint32
 	periods []Period
 	tables  map[uint32][]WildHeader
@@ -80,7 +96,16 @@ type Wild struct {
 // NewWild takes the main table's address and any time-of-day tables. Like
 // CFRU, a period table's empty methods fall back to the main table.
 func NewWild(read ReadMemory, main uint32, periods []Period) *Wild {
-	w := &Wild{read: read, main: main, periods: periods}
+	w := &Wild{read: read, layout: vanillaWild, main: main, periods: periods}
+	w.Reset()
+	return w
+}
+
+// WithLayout sets a non-vanilla header layout.
+func (w *Wild) WithLayout(l WildLayout) *Wild {
+	if l.HeaderSize >= 8 {
+		w.layout = l
+	}
 	w.Reset()
 	return w
 }
@@ -98,7 +123,7 @@ func (w *Wild) ForMap(group, num uint8) ([]PeriodEncounters, error) {
 		return cached, nil
 	}
 
-	mainInfo, err := w.lookup(w.main, group, num)
+	mainRaw, err := w.lookup(w.main, group, num)
 	if err != nil {
 		return nil, err
 	}
@@ -110,12 +135,13 @@ func (w *Wild) ForMap(group, num uint8) ([]PeriodEncounters, error) {
 
 	var result []PeriodEncounters
 	for _, p := range periods {
-		info := mainInfo
+		info := w.info(mainRaw, p.LandSlot)
 		if p.Headers != 0 {
-			own, err := w.lookup(p.Headers, group, num)
+			ownRaw, err := w.lookup(p.Headers, group, num)
 			if err != nil {
 				return nil, err
 			}
+			own := w.info(ownRaw, -1)
 			for i := range info {
 				if own[i] != 0 {
 					info[i] = own[i]
@@ -135,42 +161,68 @@ func (w *Wild) ForMap(group, num uint8) ([]PeriodEncounters, error) {
 	return result, nil
 }
 
-// lookup finds a map's info pointers in a header table; all zero if absent.
-func (w *Wild) lookup(table uint32, group, num uint8) ([4]uint32, error) {
+// info picks land, water, rock smash and fishing out of a header's
+// pointers; landSlot (if 0 or more) overrides where land comes from.
+func (w *Wild) info(raw []uint32, landSlot int) [4]uint32 {
+	var info [4]uint32
+	for i, slot := range w.layout.Slots {
+		if i == 0 && landSlot >= 0 {
+			slot = landSlot
+		}
+		if slot < len(raw) {
+			info[i] = raw[slot]
+		}
+	}
+	return info
+}
+
+// lookup finds a map's pointers in a header table; nil if absent.
+func (w *Wild) lookup(table uint32, group, num uint8) ([]uint32, error) {
 	headers, ok := w.tables[table]
 	if !ok {
 		var err error
-		headers, err = ReadWildHeaders(w.read, table)
+		headers, err = readWildHeaders(w.read, table, w.layout)
 		if err != nil {
-			return [4]uint32{}, err
+			return nil, err
 		}
 		w.tables[table] = headers
 	}
 	for _, h := range headers {
 		if h.Group == group && h.Num == num {
-			return h.Info, nil
+			return h.Raw, nil
 		}
 	}
-	return [4]uint32{}, nil
+	return nil, nil
 }
 
-// ReadWildHeaders reads a header table up to its 0xFF terminator.
+// ReadWildHeaders reads a vanilla-layout header table up to its 0xFF
+// terminator.
 func ReadWildHeaders(read ReadMemory, addr uint32) ([]WildHeader, error) {
+	return readWildHeaders(read, addr, vanillaWild)
+}
+
+func readWildHeaders(read ReadMemory, addr uint32, l WildLayout) ([]WildHeader, error) {
 	const batch = 64
+	size := l.HeaderSize
 	var headers []WildHeader
 	for {
-		b, err := read(addr+uint32(len(headers)*wildHeaderSize), batch*wildHeaderSize)
+		b, err := read(addr+uint32(len(headers)*size), batch*size)
 		if err != nil {
 			return nil, err
 		}
 		for i := 0; i < batch; i++ {
-			e := b[i*wildHeaderSize:]
+			e := b[i*size:]
 			if e[0] == 0xFF {
 				return headers, nil
 			}
 			h := WildHeader{Group: e[0], Num: e[1]}
-			for j := range h.Info {
-				h.Info[j] = binary.LittleEndian.Uint32(e[4+j*4:])
+			for j := 4; j+4 <= size; j += 4 {
+				h.Raw = append(h.Raw, binary.LittleEndian.Uint32(e[j:]))
+			}
+			for j, slot := range l.Slots {
+				if slot < len(h.Raw) {
+					h.Info[j] = h.Raw[slot]
+				}
 			}
 			headers = append(headers, h)
 		}

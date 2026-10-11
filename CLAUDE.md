@@ -113,12 +113,14 @@ Profiles use `Ref` addresses: `"0x020258E0"` is fixed, `"[0x03005008]+0x4"` mean
 
 ## Pokémon R.O.W.E. (decomp hack, 2.1.1, verified live 2026-10-11)
 
-- SHA-1 `ab2196855ac47598cb2ef7ebff475d6ed17b1992`, game code `BPEE`. Profile `profiles/rowe.json`: live party only so far (no location, dex, boxes or save yet).
+- SHA-1 `ab2196855ac47598cb2ef7ebff475d6ed17b1992`, game code `BPEE`. Profile `profiles/rowe.json`: live party, location and wild encounters (no Pokédex, boxes, save or trainers yet).
 - Save block pointers in IWRAM: `0x03004B7C` SaveBlock1 (`0x0202629C`), `0x03004B80` SaveBlock2 (`0x02025594`), `0x03004B84` PC storage (`0x0202990C`). Party count `0x02025101`, party `0x02025104`, **76 bytes per Pokémon**; SaveBlock1 + `0x238` holds the party copy (as in vanilla Emerald).
 - **Own Pokémon format** (`gen3/rowe.go`, `pokemonFormat: "rowe"`), unencrypted bit fields, read from GetMonData `0x08097938` / GetBoxMonData `0x08097AFC` (switch tables `0x08097958` / `0x08097B18`; field numbers as vanilla pokeemerald). Box part 52 bytes, party adds PP/status/level/HP/stats from `0x34`. IVs are always 0 in this game (GetBoxMonData returns 0; stats agree).
 - **Forms:** species is 12 bits at `+0x1C`, form 5 bits above it; `formSpecies` `0x085DC330` = per-species pointer to a u16 list of form species (Meowth: 52, 1560 Alolan, 1569 Galarian). Level-from-exp and stats use the form species.
 - Names: species 13 bytes at `0x0840C0E0`, moves 17 bytes at the header pointer (`0x0841245B`, unaligned), items 56-byte records at `0x08F6A088` (`speciesNameLength`/`moveNameLength`/`itemSize`).
-- Nature: personality % 25 assumed (not yet confirmed against the summary screen).
+- Nature: personality % 25 (confirmed: Cam's Meowth is Hardy).
+- **Location (verified live):** SaveBlock1 moves around like vanilla Emerald, so map ID is `[0x03004B7C]+0x4`; `gMapHeader` copy at `0x02037A30` (section `0x02037A44`); `gMapGroups` `0x0882D5D8` via `[0x080BEBC4]`; region map entries `[0x08109D8C]` (8 bytes, name at +4, from section 0, same as Emerald). Map IDs and sections match vanilla Emerald (Route 102 = 0.17, section 0x11).
+- **Wild encounters:** table `0x08F1AC7C` via `[0x080F6100]`, 193 headers of **32 bytes**: group, num, 2 pad, then 7 pointers: land by day, land by night, water, rock smash, fishing, hidden (3 slots), unknown. Profile keys `headerSize`, `slots` and per-period `landSlot` (generic, in `gen3.WildLayout`). Night = slot 1 if set, else slot 0; IsDayTime (`0x0823E5F4`) = RTC hour (`0x03004ADA`, struct at `0x03004AD8`) in 6–17; flag `0x470` inverts it (not handled).
 
 ## Unbound time of day (verified from its code, 2026-10-10)
 

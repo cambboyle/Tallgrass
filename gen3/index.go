@@ -89,7 +89,7 @@ func (w *Wild) FoundIn(areaName func(group, num uint8) string) (map[int][]Found,
 	seen := map[[2]uint8]bool{}
 	fb := NewFoundBuilder(len(w.periods))
 	for _, t := range tables {
-		headers, err := ReadWildHeaders(w.read, t)
+		headers, err := readWildHeaders(w.read, t, w.layout)
 		if err != nil {
 			return nil, err
 		}
