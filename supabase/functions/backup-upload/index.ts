@@ -1,6 +1,6 @@
 // backup-upload: a linked device that switched cloud sync on uploads a save
 // backup or its Journey history. Authorization: Bearer <device key>.
-//   X-Kind: save     X-File: gba/Game.srm   X-Version: 20261011T120000Z-ab12cd34ef56.srm
+//   X-Kind: save     X-File: gba/Game.srm (percent-encoded)   X-Version: 20261011T120000Z-ab12cd34ef56.srm
 //   X-Kind: journey  (body: JSON)
 // Saves go to backups/<user>/<device>/<X-File>/<X-Version>; the newest 30
 // versions of each save are kept.
@@ -9,6 +9,16 @@ import { admin, cors, deviceFromRequest, error, json } from "../_shared/util.ts"
 const KEEP = 30;
 const MAX = 4 * 1024 * 1024;
 const safe = (s: string) => /^[^/\\]+$/.test(s) && s !== "." && s !== ".." && s.length <= 200;
+
+// Storage keys allow only some ASCII characters, so a name with anything
+// else ("Pokémon …") is stored as "u-" + base64url of its UTF-8 bytes; the
+// website decodes it back for display.
+const plain = /^[A-Za-z0-9 ._()\-!']+$/;
+function storageName(name: string): string {
+  if (plain.test(name) && !name.startsWith("u-")) return name;
+  const bytes = new TextEncoder().encode(name);
+  return "u-" + btoa(String.fromCharCode(...bytes)).replaceAll("+", "-").replaceAll("/", "_").replaceAll("=", "");
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: cors });
@@ -32,10 +42,16 @@ Deno.serve(async (req) => {
   }
 
   if (kind !== "save") return error("X-Kind must be save or journey");
-  const file = (req.headers.get("x-file") ?? "").split("/");
+  // X-File is percent-encoded (headers can't carry UTF-8 safely).
+  let file: string[];
+  try {
+    file = (req.headers.get("x-file") ?? "").split("/").map(decodeURIComponent);
+  } catch {
+    return error("Bad file name");
+  }
   const version = req.headers.get("x-version") ?? "";
   if (file.length !== 2 || !file.every(safe) || !safe(version)) return error("Bad file or version");
-  const folder = `${root}/${file.join("/")}`;
+  const folder = `${root}/${file.map(storageName).join("/")}`;
   const { error: upErr } = await db.storage.from("backups").upload(`${folder}/${version}`, body, {
     contentType: "application/octet-stream",
     upsert: true,

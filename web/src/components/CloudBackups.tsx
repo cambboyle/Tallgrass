@@ -14,6 +14,19 @@ function versionTime(name: string): Date | null {
   return m ? new Date(Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +m[6])) : null;
 }
 
+// Folder names with characters storage doesn't allow are "u-" + base64url
+// of the UTF-8 name (see the backup-upload function).
+function folderName(name: string): string {
+  if (!name.startsWith("u-")) return name;
+  try {
+    const b64 = name.slice(2).replaceAll("-", "+").replaceAll("_", "/");
+    const bytes = Uint8Array.from(atob(b64 + "=".repeat((4 - (b64.length % 4)) % 4)), (c) => c.charCodeAt(0));
+    return new TextDecoder().decode(bytes);
+  } catch {
+    return name;
+  }
+}
+
 const when = (d: Date | null) => (d ? d.toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short", timeZone: "UTC" }) + " UTC" : "");
 
 async function deviceBackups(supabase: SupabaseClient, userId: string, device: Device) {
@@ -36,7 +49,7 @@ async function deviceBackups(supabase: SupabaseClient, userId: string, device: D
       const names = (versions ?? []).map((v) => v.name);
       const { data: signed } = names.length ? await bucket.createSignedUrls(names.map((n) => `${folder}/${n}`), 3600) : { data: [] };
       saves.push({
-        file: `${entry.name}/${f.name}`,
+        file: `${entry.name}/${folderName(f.name)}`,
         versions: names.map((n, i) => ({ name: n, at: versionTime(n), url: signed?.[i]?.signedUrl ?? null })),
       });
     }

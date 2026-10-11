@@ -9,7 +9,9 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -186,7 +188,12 @@ func (c *Client) GameProfiles() ([]GameProfile, error) {
 // UploadSave sends one save backup version (the plain save, not gzipped)
 // to the account's cloud backups. file is "gba/Game.srm".
 func (c *Client) UploadSave(token, file, version string, data []byte) error {
-	return c.upload(token, map[string]string{"X-Kind": "save", "X-File": file, "X-Version": version}, data, "application/octet-stream")
+	// Percent-encoded: headers can't carry UTF-8 ("Pokémon …") safely.
+	parts := strings.Split(file, "/")
+	for i, p := range parts {
+		parts[i] = url.PathEscape(p)
+	}
+	return c.upload(token, map[string]string{"X-Kind": "save", "X-File": strings.Join(parts, "/"), "X-Version": version}, data, "application/octet-stream")
 }
 
 // UploadJourney sends the device's whole Journey history (JSON).
