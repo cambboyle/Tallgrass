@@ -83,7 +83,7 @@ function card(p, slot) {
     </div>
     <table>
       <thead><tr><th></th>${head}</tr></thead>
-      <tbody>${row("Stat", p.stats)}${row("IV", p.ivs, 31)}${row("EV", p.evs, 252)}</tbody>
+      <tbody>${row("Stat", p.stats)}${p.noIvs ? `<tr><td>IV</td><td colspan="6" class="sub">None in this game</td></tr>` : row("IV", p.ivs, 31)}${row("EV", p.evs, 252)}</tbody>
     </table>
     <div class="moves">${moves}</div>
     <div class="meta">

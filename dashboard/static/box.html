@@ -47,7 +47,7 @@ function detailHTML(m) {
         <div class="lv">${m.isEgg ? "Egg" : `Lv ${m.level}`}</div></div>
       ${save.rom && !m.isEgg ? `<button class="btn more" data-info="${m.species}">Species info</button>` : ""}
       <div class="sub">${esc(m.speciesName)} · ${m.nature}</div></div></div>
-    <table><thead><tr><th></th>${head}</tr></thead><tbody>${m.stats.hp ? row("Stat", m.stats) : ""}${row("IV", m.ivs, 31)}${row("EV", m.evs, 252)}</tbody></table>
+    <table><thead><tr><th></th>${head}</tr></thead><tbody>${m.stats.hp ? row("Stat", m.stats) : ""}${m.noIvs ? `<tr><td>IV</td><td colspan="6" class="sub">None in this game</td></tr>` : row("IV", m.ivs, 31)}${row("EV", m.evs, 252)}</tbody></table>
     <div class="moves">${moves}</div>
     <div class="meta"><span>Item ${esc(m.itemName || "none")}</span><span>Ability ${esc(m.abilityName || m.abilitySlot + 1)}</span>
       <span>Met ${esc(m.metArea || "?")}${m.metLevel ? ` at Lv ${m.metLevel}` : " (hatched)"}</span><span>OT ${esc(m.otName)}</span></div>

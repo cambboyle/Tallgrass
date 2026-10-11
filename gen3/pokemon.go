@@ -48,8 +48,9 @@ type Pokemon struct {
 	MetLocation int `json:"metLocation"` // region map section
 	MetLevel    int `json:"metLevel"`    // 0 if hatched
 
-	EVs Stats `json:"evs"`
-	IVs Stats `json:"ivs"`
+	EVs   Stats `json:"evs"`
+	IVs   Stats `json:"ivs"`
+	NoIVs bool  `json:"noIvs,omitempty"` // the game has no IVs (R.O.W.E.): IVs are always 0
 
 	IsEgg       bool   `json:"isEgg"`
 	IsShiny     bool   `json:"isShiny"`

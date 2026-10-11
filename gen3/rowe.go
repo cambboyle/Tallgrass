@@ -63,6 +63,7 @@ func DecodeROWE(b []byte) (*Pokemon, error) {
 	p.MetLevel = int(b[0x28] & 0x7F)
 
 	p.setIVsAndPersonalityTraits(0)
+	p.NoIVs = true
 	p.IsEgg = b[0x27]&0x80 != 0
 	p.AbilitySlot = int(b[0x32] >> 4 & 3)
 	p.IsShiny = p.IsShiny || w14>>31 != 0
