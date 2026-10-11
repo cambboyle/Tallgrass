@@ -24,7 +24,14 @@ func (s *Server) EnableGamelists(dir string) {
 		return
 	}
 	go func() {
-		for range time.Tick(10 * time.Second) {
+		// Check straight away too: at boot Tallgrass starts a few seconds
+		// before EmulationStation (measured on a Pi 4: 18 s vs 25 s), the
+		// only time names written then show without another restart.
+		tick := time.Tick(10 * time.Second)
+		for first := true; ; first = false {
+			if !first {
+				<-tick
+			}
 			if s.gamelistWanted() && !gamelist.Running("/proc") {
 				if results, err := s.applyGamelists(); err != nil {
 					log.Printf("updating EmulationStation game names: %v", err)
