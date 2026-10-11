@@ -199,6 +199,7 @@ Also from ROM, via header pointers: front pics `0x08000128`, normal palettes `0x
 
 ## Handbook and RetroPie module
 
+- The website's `/docs` pages render `docs/{handbook,writing-a-profile,gamedata-export,releasing}.md` straight from GitHub raw (`web/src/lib/docs.ts`, `marked`, revalidate 10 min), so editing a doc on main updates the site; links to other docs stay on the site, other repo links go to GitHub. Add a new doc to `DOCS` there. Keep diagrams plain ASCII (box-drawing arrows fall back to a wider font).
 - `docs/handbook.md` is the process guide (pieces, dev/test/release, website, Supabase, cloud, profiles, reverse-engineering methods, secrets, troubleshooting, checklists). Keep it in step when a process changes.
 - RetroPie-Setup module: `web/public/retropie/tallgrass.sh` (served at `/retropie/tallgrass.sh`; users put it in `~/RetroPie-Setup/ext/tallgrass/scriptmodules/supplementary/`). `install_bin` runs the release's `install.sh` as root with `TALLGRASS_USER=$user` (install.sh then chowns the binary and writes `User=` for that user) and makes `$md_inst` (`/opt/retropie/supplementary/tallgrass`, a symlink to the binary) so RetroPie-Setup sees it installed; `remove` keeps `~/tallgrass` data. Verified on Cam's Pi 2026-10-11 (left installed there).
 
