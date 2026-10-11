@@ -418,6 +418,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/boxes", s.handleBoxes)
 	mux.HandleFunc("POST /api/settings/nuzlocke", s.handleNuzlocke)
 	mux.HandleFunc("GET /api/library", s.handleLibrary)
+	mux.HandleFunc("POST /api/library/patch", s.handleLibraryPatch)
 	mux.HandleFunc("GET /api/ds/sprite", s.handleDSSprite)
 	mux.HandleFunc("GET /api/species", s.handleSpecies)
 	mux.HandleFunc("GET /api/trainers", s.handleTrainers)

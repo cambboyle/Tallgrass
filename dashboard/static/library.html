@@ -12,6 +12,17 @@
   <div id="status"></div>
 </header>
 <div id="error"></div>
+<section class="card patch-card">
+  <h3 class="panel-title">Patch a ROM</h3>
+  <p class="sub">Romhacks come as a patch (.bps, .ups, .ips or .xdelta) for the original game. Pick the patch; Tallgrass saves the patched game next to the original. .bps and .ups patches find their original automatically; for .ips and .xdelta, choose it.</p>
+  <form id="patch" class="patch-form">
+    <label>Patch file <input type="file" id="patch-file" accept=".bps,.ups,.ips,.xdelta,.vcdiff" required></label>
+    <label>Name for the patched game <input type="text" id="patch-name" required placeholder="e.g. Pokémon Radical Red"></label>
+    <label>Base ROM <select id="patch-base"><option value="">Find it automatically (.bps, .ups)</option></select></label>
+    <button class="btn primary" type="submit">Patch</button>
+  </form>
+  <p class="sub" id="patch-msg" role="status"></p>
+</section>
 <main id="library" class="saves"></main>
 
 <script>
@@ -58,6 +69,11 @@ async function load() {
   document.getElementById("error").textContent = "";
   document.getElementById("status").textContent = data.hashing ? "identifying games…" : "";
 
+  const select = document.getElementById("patch-base"), chosen = select.value;
+  select.innerHTML = `<option value="">Find it automatically (.bps, .ups)</option>` + (data.roms || []).filter((r) => r.sha1)
+    .map((r) => `<option value="${r.sha1.slice(0, 12)}">${esc(r.file)}</option>`).join("");
+  select.value = chosen;
+
   const groups = {};
   for (const r of data.roms || []) (groups[r.system] ||= []).push(r);
   document.getElementById("library").innerHTML = Object.keys(groups).length
@@ -78,6 +94,34 @@ document.addEventListener("click", async (e) => {
   const res = await fetch("/api/cloud/upload", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ rom: b.dataset.upload }) });
   b.textContent = res.ok ? "Uploaded" : "Upload failed";
   if (!res.ok) document.getElementById("error").textContent = await res.text();
+});
+
+document.getElementById("patch-file").addEventListener("change", (e) => {
+  const name = document.getElementById("patch-name");
+  if (!name.value && e.target.files[0]) name.value = e.target.files[0].name.replace(/\.(bps|ups|ips|xdelta|vcdiff)$/i, "");
+});
+
+document.getElementById("patch").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const file = document.getElementById("patch-file").files[0];
+  const msg = document.getElementById("patch-msg"), btn = e.target.querySelector("button");
+  const q = new URLSearchParams({ name: document.getElementById("patch-name").value });
+  const base = document.getElementById("patch-base").value;
+  if (base) q.set("base", base);
+  btn.disabled = true;
+  msg.textContent = "Patching…";
+  const res = await fetch(`/api/library/patch?${q}`, { method: "POST", headers: { "Content-Type": "application/octet-stream" }, body: file });
+  btn.disabled = false;
+  if (!res.ok) {
+    msg.textContent = await res.text();
+    return;
+  }
+  const r = await res.json();
+  msg.innerHTML = `Made <b>${esc(r.file)}</b> from ${esc(r.base)}${r.checked ? " (checksums match)" : ""}. ` +
+    (r.game ? `It's ${esc(r.game)}, which Tallgrass supports. Restart EmulationStation to see it in the game list.`
+      : `Tallgrass doesn't recognise this version yet. Restart EmulationStation to see it in the game list.`);
+  e.target.reset();
+  load();
 });
 
 load();

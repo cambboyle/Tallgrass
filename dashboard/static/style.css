@@ -268,3 +268,8 @@ button.link { font: inherit; color: var(--text); background: none; border: 0; pa
 .pin-form .row { display: flex; gap: 8px; flex-wrap: wrap; }
 #account { display: grid; gap: 12px; }
 .save .top .actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.patch-card { margin: 16px; }
+.patch-form { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: end; margin-top: 10px; }
+.patch-form label { display: grid; gap: 4px; font-size: 13px; color: var(--muted); flex: 1 1 220px; }
+.patch-form input[type=text], .patch-form select { font: inherit; font-size: 14px; padding: 7px 9px; border-radius: 8px; border: 1px solid var(--line); background: var(--card); color: var(--text); min-width: 0; }
+.patch-form input[type=file] { font-size: 13px; color: var(--text); max-width: 100%; }
