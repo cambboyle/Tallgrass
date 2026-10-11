@@ -138,9 +138,10 @@ async function loadES() {
   const card = document.getElementById("es-card");
   card.hidden = !v.games?.length;
   document.getElementById("es-games").innerHTML = (v.games || []).map((g) => `<li>${esc(g.file)} → <b>${esc(g.name)}</b></li>`).join("");
-  document.getElementById("es-msg").textContent = v.emulationStationRunning
-    ? "EmulationStation is running, and it rewrites these lists when it quits. On the Pi: Start → Quit → Quit EmulationStation, then press Update names. Restart the Pi afterwards to see them."
+  document.getElementById("es-msg").textContent = v.on
+    ? "On: Tallgrass keeps these names up to date. Changes are written while EmulationStation isn't running (it would overwrite them), so they show after the next restart."
     : "";
+  document.getElementById("es-apply").textContent = v.on ? "Update names now" : "Update names";
 }
 
 document.getElementById("es-apply").addEventListener("click", async (e) => {
@@ -152,8 +153,12 @@ document.getElementById("es-apply").addEventListener("click", async (e) => {
     msg.textContent = await res.text();
     return;
   }
-  const results = await res.json();
-  const n = results.reduce((t, r) => t + r.renamed.length + r.added.length, 0);
+  const v = await res.json();
+  if (v.pending) {
+    msg.textContent = "EmulationStation is running, and it rewrites its lists when it quits, so Tallgrass will write the names as soon as it isn't: restart the Pi (or quit EmulationStation) and they'll be there.";
+    return;
+  }
+  const n = v.results.reduce((t, r) => t + r.renamed.length + r.added.length, 0);
   msg.textContent = n ? `Updated ${n} game${n === 1 ? "" : "s"}. Start EmulationStation again (or restart the Pi) to see the new names.` : "Nothing to change: the names are already up to date.";
 });
 

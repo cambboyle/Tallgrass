@@ -92,6 +92,7 @@ type Server struct {
 	wild        *gen3.Wild
 	species     *gen3.SpeciesTables // for ability names; nil until needed
 	esGamelists string              // EmulationStation's gamelists folder; "" = off
+	gamelistOn  bool                // game names asked for (also kept as a setting); under mu
 	national    *gen3.National
 	levels      *gen3.Levels
 	mapNames    uint32

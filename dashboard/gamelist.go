@@ -2,18 +2,67 @@ package dashboard
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"path/filepath"
 	"slices"
 	"strings"
+	"time"
 
 	"tallgrass/gamelist"
 )
 
 // EnableGamelists lets the Library page name recognised games in
 // EmulationStation's menus (dir: ~/.emulationstation/gamelists).
+// EmulationStation rewrites its lists when it quits, so names are only
+// written while it isn't running: once asked, Tallgrass keeps checking
+// (every 10 s) and applies them at the first chance, such as during a
+// restart, and again whenever they've been undone.
 func (s *Server) EnableGamelists(dir string) {
 	s.esGamelists = dir
+	if dir == "" {
+		return
+	}
+	go func() {
+		for range time.Tick(10 * time.Second) {
+			if s.gamelistWanted() && !gamelist.Running("/proc") {
+				if results, err := s.applyGamelists(); err != nil {
+					log.Printf("updating EmulationStation game names: %v", err)
+				} else {
+					for _, r := range results {
+						if n := len(r.Renamed) + len(r.Added); n > 0 {
+							log.Printf("named %d games in %s", n, r.File)
+						}
+					}
+				}
+			}
+		}
+	}()
+}
+
+// gamelistWanted reports whether the player asked for game names (kept as
+// a setting, so it survives restarts).
+func (s *Server) gamelistWanted() bool {
+	s.mu.Lock()
+	wanted, store := s.gamelistOn, s.store
+	s.mu.Unlock()
+	if wanted || store == nil {
+		return wanted
+	}
+	v, _ := store.Setting("", "gamelist.names")
+	return v == "on"
+}
+
+func (s *Server) wantGamelists() {
+	s.mu.Lock()
+	s.gamelistOn = true
+	store := s.store
+	s.mu.Unlock()
+	if store != nil {
+		if err := store.SetSetting("", "gamelist.names", "on"); err != nil {
+			log.Printf("saving the game names setting: %v", err)
+		}
+	}
 }
 
 // GamelistGame is one game the Library page offers to name.
@@ -57,44 +106,54 @@ func (s *Server) gamelistGames() []GamelistGame {
 	return out
 }
 
-// handleGamelist: GET shows what would be named; POST (JSON) writes it.
+// handleGamelist: GET shows what would be named; POST (JSON) asks for it:
+// written now if EmulationStation isn't running, otherwise as soon as it
+// isn't.
 func (s *Server) handleGamelist(w http.ResponseWriter, r *http.Request) {
 	if s.esGamelists == "" || s.saves == nil {
 		http.Error(w, "no EmulationStation gamelists folder", http.StatusNotFound)
 		return
 	}
-	games := s.gamelistGames()
 	running := gamelist.Running("/proc")
+	w.Header().Set("Content-Type", "application/json")
 	if r.Method == http.MethodGet {
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]any{"games": games, "emulationStationRunning": running})
+		json.NewEncoder(w).Encode(map[string]any{"games": s.gamelistGames(), "emulationStationRunning": running,
+			"on": s.gamelistWanted()})
 		return
 	}
 	if r.Header.Get("Content-Type") != "application/json" {
 		http.Error(w, "expected JSON", http.StatusUnsupportedMediaType)
 		return
 	}
+	s.wantGamelists()
 	if running {
-		http.Error(w, "EmulationStation is running, and it rewrites its game lists when it quits. "+
-			"On the Pi, open the Start menu → Quit → Quit EmulationStation, then try again.", http.StatusConflict)
+		json.NewEncoder(w).Encode(map[string]any{"pending": true})
 		return
 	}
+	results, err := s.applyGamelists()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	json.NewEncoder(w).Encode(map[string]any{"results": results})
+}
+
+// applyGamelists writes the names into each system's gamelist.xml.
+func (s *Server) applyGamelists() ([]gamelist.Result, error) {
 	bySystem := map[string][]gamelist.Game{}
-	for _, g := range games {
+	for _, g := range s.gamelistGames() {
 		bySystem[g.System] = append(bySystem[g.System], gamelist.Game{Path: "./" + g.File, Name: g.Name,
 			Desc: g.Name + ". Tallgrass follows this game live: your party, the Pokémon on each route, your Pokédex, your journey and your PC boxes."})
 	}
-	var results []gamelist.Result
+	results := []gamelist.Result{}
 	for sys, list := range bySystem {
 		res, err := gamelist.Apply(filepath.Join(s.esGamelists, sys, "gamelist.xml"), list)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
+			return nil, err
 		}
 		res.File = strings.TrimPrefix(res.File, s.esGamelists+"/")
 		results = append(results, res)
 	}
 	slices.SortFunc(results, func(a, b gamelist.Result) int { return strings.Compare(a.File, b.File) })
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(results)
+	return results, nil
 }

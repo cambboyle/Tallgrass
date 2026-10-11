@@ -50,6 +50,9 @@ func TestGamelistAPI(t *testing.T) {
 	if rec.Code != http.StatusOK {
 		t.Fatalf("apply = %d %s", rec.Code, rec.Body)
 	}
+	if !s.gamelistWanted() {
+		t.Error("asking for names should switch them on")
+	}
 	b, _ := os.ReadFile(filepath.Join(lists, "gba", "gamelist.xml"))
 	if !strings.Contains(string(b), "<name>Pokémon Known Hack</name>") || strings.Contains(string(b), "Unknown") {
 		t.Errorf("gamelist =\n%s", b)
