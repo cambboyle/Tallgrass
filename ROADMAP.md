@@ -92,8 +92,8 @@ Launch supports three games, done properly: **Radical Red, HeartGold Generations
 - [x] **Public docs website, first version** (2026-10-09): live at https://tallgrass-delta.vercel.app with Radical Red, Unbound and HeartGold Generations uploaded from Cam's Pi. Still to come below:
   - Generated pages per game/hack version, built from M3 data uploaded by agents or maintainers. Only extracted *facts* (stats, learnsets), never sprites or other assets.
   - [x] User guide at `/guide` (2026-10-11): install, setup wizard, dashboard tour, PIN, account linking, updates, troubleshooting, uninstall.
-  - Curated guides and walkthroughs written in-site.
-  - Links to a hack's official docs, with its author's permission where content is copied.
+  - [x] **Game guides** (2026-10-12): `/games/<slug>/guide` for Radical Red, Unbound and HeartGold Generations: what the hack adds, what Tallgrass does with it, getting started, and links to the official thread and docs. Written in our own words from the hacks' public information (no author outreach, nothing copied); content lives in `web/src/lib/guides.ts`.
+  - Walkthroughs are still open. Links to a hack's official docs are in the guides; ask the author first before copying any of their content.
 - [x] **Profile registry** (2026-10-11): `profiles/` on main is published to Supabase (`game_profiles`) by CI; agents download it every 6 h and apply without a restart; community submissions are reviewed as pull requests. `minTallgrass` keeps older agents from profiles they can't read.
 - [x] **Optional sync** (2026-10-11): save backups (newest 30 versions per save) and Journey history to the account, switched on per device; downloads on the website's Account page.
 
