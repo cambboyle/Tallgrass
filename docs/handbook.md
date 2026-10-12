@@ -28,6 +28,7 @@ How Tallgrass fits together and how to do every routine job: developing, testing
 16. [Secrets and where they live](#16-secrets-and-where-they-live)
 17. [Troubleshooting](#17-troubleshooting)
 18. [Checklists](#18-checklists)
+19. [Reflashing the Pi](#19-reflashing-the-pi)
 
 ## 1. The pieces
 
@@ -60,7 +61,7 @@ How Tallgrass fits together and how to do every routine job: developing, testing
 1. **Never ship game data.** No ROMs, sprites, names or text in the repository, the releases or the website's own files. Everything is read from the user's own ROM. Profiles only say *where* data is. The website's game docs come from exports that a maintainer uploads from their own ROM.
 2. **Never lose a save.** Anything that writes a save (restore, upload, sync, setup fixes) backs up the current file first. It refuses while that game is running, because the emulator would overwrite the file on exit.
 3. **Stay light on the Pi.** The service runs at `Nice=10` with idle I/O, and games come first.
-4. **Don't change the Pi's system.** No `apt upgrade` (Buster is end-of-life), and no installing packages. Config edits keep a `.bak-tallgrass` copy.
+4. **No surprise changes to the Pi's system.** Config edits keep a `.bak-tallgrass` copy, and the setup wizard refuses to edit while a game runs. The Pi is on Raspberry Pi OS 12 (Bookworm), so updates are fine, but play a game afterwards to check the live read still works.
 5. **Nothing leaves the device unless the user switches it on.** Accounts, cloud backups and game data uploads are all opt-in.
 6. Commits are by Cameron Boyle, with no AI attribution lines.
 
@@ -396,6 +397,9 @@ The Supabase URL and anon key are public on purpose: they're compiled into the a
 | Cloud backup error | See `curl localhost:8080/api/cloud/sync` on the device, and the Supabase function and storage logs | |
 | Release failed | Usually a test | `gh run view --log-failed`, fix, tag the next version |
 | Go programs on the Mac can't reach the Pi over UDP | macOS Local Network privacy | System Settings → Privacy & Security → Local Network |
+| Bluetooth controller won't pair after a reflash (`ConnectionAttemptFailed`, "Page Timeout") | The controller still holds a pairing with the Pi's old Bluetooth address, and the new system lost the key | Back up `/var/lib/bluetooth` before reflashing. Otherwise give the Pi a new address (section 19) |
+| Screen is blurry or at the wrong size after an OS change | The old firmware `hdmi_*` settings don't apply under KMS | Use `video=HDMI-A-1:<w>x<h>M@59` in `/boot/firmware/cmdline.txt` (section 19) |
+| An `ssh` wait loop never ends | `pgrep -f <name>` run over `ssh` matches the ssh shell itself | Wait on a marker file instead |
 
 ## 18. Checklists
 
@@ -415,3 +419,53 @@ The Supabase URL and anon key are public on purpose: they're compiled into the a
 1. Add a migration file, apply it, and commit it.
 2. Deploy the function, then commit it.
 3. Check the logs after the first real call.
+
+## 19. Reflashing the Pi
+
+Done once, on 2026-10-12 (Buster to Bookworm); this is what worked, including what to do differently. About 20 minutes to back up, then 1–2 hours.
+
+**Which OS.** RetroPie's own image is still 4.8 on Buster (2022), so flashing it gets you the same old system. Instead use **Raspberry Pi OS Lite, 32-bit, Bookworm** (Debian 12) and RetroPie's install script on top. DraStic is 32-bit only, and the script has prebuilt binaries for Pi OS 10–12 only (Debian 13 would build everything from source).
+
+**1. Back up to the Mac** (nothing is changed on the Pi):
+
+```bash
+B=~/Backups/retropie-$(date +%F); mkdir -p $B; chmod 700 $B
+rsync -a --no-owner --no-group -e ssh pi@192.168.0.227:/home/pi/RetroPie/ $B/RetroPie/
+rsync -a --no-owner --no-group --rsync-path="sudo rsync" -e ssh pi@192.168.0.227:/opt/retropie/configs/ $B/opt-retropie-configs/
+rsync -a --no-owner --no-group -e ssh pi@192.168.0.227:/home/pi/tallgrass/ $B/tallgrass/
+rsync -a --no-owner --no-group --rsync-path="sudo rsync" -e ssh pi@192.168.0.227:/var/lib/bluetooth/ $B/bluetooth/   # keeps controller pairings
+ssh pi@192.168.0.227 'sudo cat /boot/config.txt' > $B/boot-config.txt
+```
+
+Also save a list of installed packages (`ls /opt/retropie/{emulators,libretrocores,supplementary}`). Check the copy with `rsync -anc --itemize-changes` (no output means identical). Close the game first, so saves are consistent.
+
+**2. Flash** with Raspberry Pi Imager: Pi 4, Raspberry Pi OS Lite (32-bit) on Bookworm (the imager may call it "Legacy"). Customise: hostname `retropie`, user `pi`, Wi-Fi, SSH on with a public key. **Paste the key carefully**: a stray space made it useless this time. If key login fails, serve the key from the Mac and fetch it on the Pi's keyboard:
+
+```bash
+# Mac: serve one file for a minute
+D=$(mktemp -d); cp ~/.ssh/id_ed25519.pub $D/key.pub; cd $D && python3 -m http.server 8000 --bind $(ipconfig getifaddr en0)
+# Pi (at its keyboard): replace authorized_keys with it
+curl -s http://<mac ip>:8000/key.pub > ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys
+```
+
+Then on the Mac `ssh-keygen -R 192.168.0.227` (new host key) and connect.
+
+**3. Install RetroPie** (about 15 minutes, binaries):
+
+```bash
+sudo apt update && sudo apt -y full-upgrade && sudo apt -y install git dialog unzip xmlstarlet rsync
+git clone --depth=1 https://github.com/RetroPie/RetroPie-Setup.git && cd RetroPie-Setup
+sudo ./retropie_packages.sh setup basic_install       # run in the background; it logs a lot
+for p in drastic bluetooth usbromservice xpad; do sudo ./retropie_packages.sh $p; done
+sudo ./retropie_packages.sh autostart enable           # boot straight into EmulationStation
+```
+
+**4. Display.** Under KMS the old `hdmi_cvt` lines don't apply. Check the panel's real mode (`edid-decode /sys/class/drm/card*-HDMI-A-1/edid`), then add to the single line in `/boot/firmware/cmdline.txt`: `video=HDMI-A-1:1024x600M@59` (use your panel's size). `M` asks for a calculated mode and `@59` stops the kernel picking an EDID mode that the Pi 4 driver rejects (odd horizontal timings; see `dmesg | grep "not supported"`). Fan: add `dtoverlay=gpio-fan,gpiopin=14,temp=80000` to `/boot/firmware/config.txt`. Reboot and check `cat /sys/class/graphics/fb0/virtual_size`.
+
+**5. Restore** (don't copy whole config folders over the fresh ones: RetroArch is newer): ROMs and saves, DraStic's folder, EmulationStation's folder (settings, gamelists, `es_input.cfg`), controller autoconfigs, `emulators.cfg`, `runcommand.cfg`. For `retroarch.cfg` and the core options, apply only the keys that differ from the fresh file (the keyboard bindings, `network_cmd_enable`, `autosave_interval`). Then `sudo chown -R pi:pi /opt/retropie/configs`.
+
+**6. Tallgrass.** Install it (module or `install.sh`), `sudo systemctl stop tallgrass`, move the fresh database aside, copy the saved data in (not the binary), start it. Check `/api/cloud`, `/api/saves` and the Setup page.
+
+**7. Bluetooth controller.** If `/var/lib/bluetooth` was restored (as root, with the same adapter address) pairings may survive. If not, and the controller won't pair: it remembers the Pi's old address. Either clear the controller's pairings (the method depends on the model), or give the Pi a new fixed address with a small service (see `CLAUDE.md`, "The Pi's system": `bt-address.service`, which sets it after `bluetooth.service` with `btmgmt power off` + `public-addr`, verifies with `hciconfig hci0`, and restarts bluetooth once). Pair with `bluetoothctl` (agent on, scan on, pair, trust, connect) while the controller is in pairing mode.
+
+**8. Test live.** Start a RetroArch game and a DraStic game, and check `/api/party` shows the party, `/api/boxes` says `live`, and the Journey continued. That's the real proof; a green Setup page isn't.

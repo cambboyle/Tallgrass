@@ -1,6 +1,6 @@
 # Tallgrass
 
-A companion app for Cam's RetroPie (Raspberry Pi 4, 4GB), used only for Pokémon games and romhacks. One Go service with a web dashboard, combining five tools:
+A companion app for Cam's RetroPie (Raspberry Pi 4, 1 GB), used only for Pokémon games and romhacks. One Go service with a web dashboard, combining five tools:
 
 1. **Live party dashboard**: species, level, HP, nature, IVs/EVs and moves, read from game RAM
 2. **Route encounter tracker**: what's catchable on the current map, and what's already been caught
@@ -46,7 +46,7 @@ ROMs + patches ──► Romhack manager ──► gamelist.xml
 
 ## Environment
 
-- **Pi:** `pi@192.168.0.227`, Raspbian 10 (Buster), RetroPie, RetroArch **1.10.0**
+- **Pi:** `pi@192.168.0.227`, Raspberry Pi 4 with **1 GB** RAM (revision `a03115`; earlier notes said 4 GB), Raspberry Pi OS 12 (Bookworm), RetroPie 4.8.12, RetroArch **1.19.1**. Reflashed from Buster on 2026-10-12; see "The Pi's system" below.
 - **GBA core:** `lr-mgba` (default in `/opt/retropie/configs/gba/emulators.cfg`). It supports memory maps, so `READ_CORE_MEMORY` works.
 - **Network commands:** `network_cmd_enable = "true"` in `/opt/retropie/configs/all/retroarch.cfg`. RetroArch listens on `0.0.0.0:55355` (UDP, unauthenticated, LAN-reachable) only while a game is running.
 - **Dev machine:** MacBook Pro M4, project at `~/Projects/pokecompanion` (folder keeps its old name), Go module `tallgrass`. Repo: `git@github.com:cambboyle/Tallgrass.git`.
@@ -263,7 +263,7 @@ Also from ROM, via header pointers: front pics `0x08000128`, normal palettes `0x
 ## Save files
 
 - RetroPie keeps saves next to the ROMs (`savefile_directory` unset), e.g. `~/RetroPie/roms/gba/<rom name>.srm`. Backups on the Pi: `/home/pi/tallgrass/backups/`.
-- `autosave_interval = "60"` is set in `/opt/retropie/configs/all/retroarch.cfg` (line 957; changed 2026-10-09, original kept as `retroarch.cfg.bak-pokecompanion`). RetroArch's default (0) only writes the `.srm` when the game closes. It writes only when save data changed, and `config_save_on_exit = "false"`, so the edit sticks. Takes effect on the next game launch.
+- `autosave_interval = "60"` is set in `/opt/retropie/configs/all/retroarch.cfg` (set 2026-10-09; carried over the 2026-10-12 reflash by merging the old file's differing keys over the fresh one, the fresh file kept as `retroarch.cfg.fresh-install`). RetroArch's default (0) only writes the `.srm` when the game closes. It writes only when save data changed, and `config_save_on_exit = "false"`, so the edit sticks. Takes effect on the next game launch.
 - Restoring while a game runs is refused: RetroArch would overwrite the file from memory on exit. "Game running" comes from the dashboard poller reaching RetroArch, so it's any game, not just the one being restored.
 
 ## Save file format (Radical Red)
@@ -304,10 +304,24 @@ Also from ROM, via header pointers: front pics `0x08000128`, normal palettes `0x
 - On 2026-10-09 around 14:18, Go- and Python-built programs on the Mac started failing to send UDP to the Pi ("write: broken pipe" / "No route to host") while `nc` and ping still worked. Probably macOS Local Network privacy (System Settings → Privacy & Security → Local Network). Headless Chrome was hit too (it could no longer load the Pi's dashboard at ~15:05), while `curl` still worked. The deployed app on the Pi is unaffected.
 - macOS caps outgoing UDP datagrams at 9216 bytes (`net.inet.udp.maxdgram`), which matters for fake RetroArch servers in tests (see `TestReadMemoryChunks`).
 
+## The Pi's system (reflashed 2026-10-12)
+
+- **OS:** Raspberry Pi OS Lite, 32-bit userland (`getconf LONG_BIT` = 32) on a 64-bit kernel, Debian 12 Bookworm. RetroPie's latest *image* is still 4.8 on Buster (March 2022), so the supported route is Pi OS plus the RetroPie-Setup script (`~/RetroPie-Setup`, same commit `15b002c` as before). Its `system.sh` ships binaries for Pi OS 10/11 (32-bit) and 12 (32/64-bit); Debian 13 would build everything from source, so stay on 12. Installed with `sudo ./retropie_packages.sh setup basic_install` (about 15 minutes) plus `drastic bluetooth usbromservice xpad`; omxiv, bashwelcometweak and mesa-drm were left out. `drastic` is 32-bit only, hence the 32-bit OS. Updates are fine now (`apt update && full-upgrade`); test one game afterwards.
+- **Tallgrass** on the Pi is now the **arm64** build (`install.sh` goes by `uname -m`; a static Go binary runs fine on 32-bit userland). Live reads verified against RetroArch 1.19.1 (R.O.W.E.) and DraStic (HeartGold Generations) the same day.
+- **Memory:** DraStic runs under X11 + matchbox on KMS (`backends.cfg`: `drastic="x11"`): about 19% of RAM; with HeartGold Generations running the Pi used 275 of 906 MB.
+- **Display:** a WIMAXIT panel, native 1024×600. The old firmware `hdmi_cvt` line does nothing under KMS, and the panel's own EDID timing (odd horizontal values) is rejected by the Pi 4's vc4 driver (`User-defined mode not supported` in `dmesg`). `/boot/firmware/cmdline.txt` ends with `video=HDMI-A-1:1024x600M@59`: `M` makes the kernel calculate a CVT mode, and `@59` stops it matching the rejected EDID mode first (59 Hz is also closer to GBA/DS rates). Verify with `cat /sys/class/graphics/fb0/virtual_size` (1024,600). The fan overlay `dtoverlay=gpio-fan,gpiopin=14,temp=80000` is in `/boot/firmware/config.txt`; both files have `.bak-tallgrass` copies.
+- **Boot to EmulationStation:** RetroPie-Setup's `autostart enable` (console autologin + `/etc/profile.d/10-retropie.sh` + `all/autostart.sh` = `emulationstation #auto`).
+- **Restored from the Mac backup** (`~/Backups/retropie-2026-10-12`, 1 GB): ROMs, saves and BIOS; DraStic's folder (config and DS saves); EmulationStation settings, gamelists and `es_input.cfg`; the Pro Controller autoconfig; `all/emulators.cfg`, `autostart.sh`, `bluetooth.cfg`; `runcommand.cfg` (with `use_art = "0"`: its image viewer isn't installed); `retroarch.cfg` and the core options merged key by key (keyboard bindings, `network_cmd_enable`, `autosave_interval`); `~/tallgrass` data (database, backups, cloud key). Not restored: per-system `retroarch.cfg`s and N64 configs (new defaults), and Wi-Fi/Bluetooth secrets. **Not in the backup: `/var/lib/bluetooth`** (root-only), so pairings were lost; next time `sudo rsync` it too.
+- **Bluetooth controller (8BitDo Ultimate 2, BT/2.4G slide switch):** over Bluetooth it appears as "Pro Controller" (Switch mode), address `E4:17:D8:25:DF:DA`. After the reflash it refused to pair (`ConnectionAttemptFailed`, or the menu's "Page Timeout") because it still held a bond with the Pi's *same adapter address* but the new system had lost the key. Fix: give the Pi a new fixed address, `D8:3A:DD:5E:11:C2`, set at every boot by `bt-address.service` (`/usr/local/sbin/bt-set-address.sh`: after `bluetooth.service`, `btmgmt power off` + `public-addr`, verified with `hciconfig hci0`, then one `systemctl restart bluetooth`). Setting it *before* bluetoothd starts fails, and `btmgmt` prints nothing without a terminal, so never test its output inside a unit. To wake the controller after boot press **Home** (pairing mode is the pair button held 3 s with the switch on BT). Cam says plugging it in over USB cuts the Pi's power (not investigated: cable or supply).
+- **Hotkeys (Cam's restored config):** RetroArch keyboard: hold `3` then `Enter` exits (`input_enable_hotkey = num3`), `3`+`x` is the menu; Pro Controller: hotkey button 11 (Home or a stick click, unconfirmed) + Plus exits; DraStic: `M` opens its menu, then Exit DraStic.
+- **SSH is key-only.** The key pasted into Pi Imager got a stray space and was rejected; fix without a password by serving the public key from the Mac (`python3 -m http.server --bind <mac ip>` in a temp folder, then on the Pi `curl -s http://<mac ip>:8000/key.pub > ~/.ssh/authorized_keys`) and stopping the server. Never filter `authorized_keys` by line length (that locked access once).
+- **Scripting gotcha:** `pgrep -f <string>` run over `ssh` matches the remote shell's own command line and always says "running"; wait on a marker file instead.
+- Procedure for next time: docs/handbook.md, "Reflashing the Pi".
+
 ## Pi gotchas
 
-- `/etc/apt/sources.list` was repaired to `deb http://legacy.raspbian.org/raspbian/ buster main contrib non-free rpi`, because Raspbian Buster moved to the legacy server. Stray Debian repos had broken RetroArch (`libavcodec.so.58` was missing).
-- **Do not run `apt upgrade` on the Pi.** Buster is end-of-life; a reflash to a newer OS is planned eventually.
+- RetroArch's network commands and DraStic memory reads both still work on Bookworm (no Yama on this kernel).
+- Cam's Pi has only 1 GB of RAM: keep Tallgrass light and don't add heavy services next to DraStic.
 
 ## Working with Cam
 

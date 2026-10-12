@@ -112,7 +112,7 @@ Launch supports three games, done properly: **Radical Red, HeartGold Generations
 - [x] **Self-update** (2026-10-11): Ed25519-signed checksums; Account → Updates installs and restarts. Public since v0.1.0 (2026-10-11); Cam's Pi installed it with the one-line installer.
 - [x] **Docs** (2026-10-11): install and troubleshooting on the website's `/guide`; [writing a game profile](docs/writing-a-profile.md) with field reference and the techniques used for R.O.W.E.; local profiles folder (`-profiles-dir`, default `profiles`) to try one without rebuilding.
 - [x] **CI** (2026-10-11): GitHub Actions for tests and tagged releases. Still to do: a private test corpus of saves and ROM-derived fixtures, never published.
-- [ ] Cam's own Pi needs reflashing from Raspbian Buster (end of life) to a current OS at some point; this doubles as a test of the setup wizard.
+- [x] **Reflash Cam's Pi** (2026-10-12): from Raspbian Buster to Raspberry Pi OS 12 (Bookworm, 32-bit userland) with RetroPie 4.8.12 installed by the setup script; data restored from a Mac backup; the live read verified for R.O.W.E. (RetroArch 1.19.1) and HeartGold Generations (DraStic). Gotchas and the procedure are in docs/handbook.md ("Reflashing the Pi").
 
 ### M7: Romhack library manager (the original Phase 8)
 - [x] Apply `.ips`/`.bps`/`.ups`/`.xdelta` patches (2026-10-11): Library → Patch a ROM, `POST /api/library/patch`. BPS/UPS find their base by size + CRC32 and verify the result; xdelta (VCDIFF, no secondary compression) checks each window's Adler-32; IPS checks nothing. Verified with a real HeartGold → HGG xdelta (SHA-1 matches).
