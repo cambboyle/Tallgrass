@@ -184,6 +184,53 @@ func scriptTrainers(read ReadMemory, script uint32) []int {
 	return ids
 }
 
+// scriptTrainersDeep is scriptTrainers for NPCs the map marks as trainers
+// (object trainer type 1–3), whose battle may come after dialogue and flag
+// checks: gym leaders, rivals and bosses in hacks like Unbound open with
+// text and branch several times first. It follows jumps and calls up to
+// four levels and reads further into each script. Only used for objects
+// that are trainers, since shared scripts further in could otherwise put a
+// trainer on a map they aren't on.
+func scriptTrainersDeep(read ReadMemory, script uint32) []int {
+	var ids []int
+	seen := map[uint32]bool{}
+	var scan func(at uint32, depth int)
+	scan = func(at uint32, depth int) {
+		if !isROMPointer(at) || seen[at] || len(seen) > 24 {
+			return
+		}
+		seen[at] = true
+		b, err := read(at, 288)
+		if err != nil {
+			return
+		}
+		le := binary.LittleEndian
+		var targets []uint32
+		for o := 0; o+10 <= len(b); o++ {
+			if b[o] == 0x5C && b[o+1] <= 15 && isROMPointer(le.Uint32(b[o+6:])) {
+				if id := int(le.Uint16(b[o+2:])); id != 0 && !slices.Contains(ids, id) {
+					ids = append(ids, id)
+				}
+				o += 9
+				continue
+			}
+			switch {
+			case (b[o] == 0x04 || b[o] == 0x05) && o+5 <= len(b) && isROMPointer(le.Uint32(b[o+1:])):
+				targets = append(targets, le.Uint32(b[o+1:]))
+			case (b[o] == 0x06 || b[o] == 0x07) && o+6 <= len(b) && b[o+1] <= 5 && isROMPointer(le.Uint32(b[o+2:])):
+				targets = append(targets, le.Uint32(b[o+2:]))
+			}
+		}
+		if depth > 0 {
+			for _, t := range targets {
+				scan(t, depth-1)
+			}
+		}
+	}
+	scan(script, 4)
+	return ids
+}
+
 // allROWE reads Pokémon R.O.W.E.'s trainers: 64-byte records (flags,
 // class, music, pic, name[12] at 4, items from 0x16, AI at 0x24, party
 // pointer at 0x28, party size at 0x3C; a second team at 0x38, size 0x3D,

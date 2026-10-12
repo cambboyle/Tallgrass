@@ -50,7 +50,9 @@ func ReadMaps(read ReadMemory, groups uint32) ([]MapData, error) {
 	var lists []uint32
 	for g := 0; g < 64; g++ {
 		p := ptr(groups + uint32(g*4))
-		if !isROMPointer(p) {
+		// The table ends at the first non-pointer, or at a pointer back into
+		// the table itself (Unbound has one right after its last group).
+		if !isROMPointer(p) || (p >= groups && p < groups+64*4) {
 			break
 		}
 		lists = append(lists, p)
@@ -63,15 +65,18 @@ func ReadMaps(read ReadMemory, groups uint32) ([]MapData, error) {
 				end = other
 			}
 		}
-		for n := 0; list+uint32(n*4) < end; n++ {
+		// Hacks leave erased slots inside a group (Unbound's group 4 starts
+		// with one), so skip bad entries; a long run of them means the list
+		// has ended and the rest is whatever else sits in the ROM.
+		bad := 0
+		for n := 0; list+uint32(n*4) < end && bad < 16; n++ {
 			header := ptr(list + uint32(n*4))
-			if !isROMPointer(header) || !isROMPointer(ptr(header)) {
-				break
+			h := mapHeader(read, header)
+			if h == nil {
+				bad++
+				continue
 			}
-			h, err := read(header, 0x18)
-			if err != nil {
-				break
-			}
+			bad = 0
 			m := MapData{Group: g, Num: n, Section: int(h[0x14])}
 			readConnections(read, le.Uint32(h[12:]), &m)
 			if events := le.Uint32(h[4:]); isROMPointer(events) {
@@ -81,6 +86,25 @@ func ReadMaps(read ReadMemory, groups uint32) ([]MapData, error) {
 		}
 	}
 	return maps, nil
+}
+
+// mapHeader returns a map's 24-byte header if it looks like one: pointers
+// to the layout (always set), events, scripts and connections (each set or
+// null). Anything else is an erased or unrelated entry.
+func mapHeader(read ReadMemory, header uint32) []byte {
+	if !isROMPointer(header) {
+		return nil
+	}
+	h, err := read(header, 0x18)
+	if err != nil {
+		return nil
+	}
+	le := binary.LittleEndian
+	ok := func(p uint32) bool { return p == 0 || isROMPointer(p) }
+	if !isROMPointer(le.Uint32(h[0:])) || !ok(le.Uint32(h[4:])) || !ok(le.Uint32(h[8:])) || !ok(le.Uint32(h[12:])) {
+		return nil
+	}
+	return h
 }
 
 func readConnections(read ReadMemory, p uint32, m *MapData) {
@@ -122,7 +146,11 @@ func readEvents(read ReadMemory, events uint32, m *MapData) {
 			for i := 0; i < people; i++ {
 				o := objs[i*24:]
 				script := le.Uint32(o[16:])
-				for _, id := range scriptTrainers(read, script) {
+				ids := scriptTrainers(read, script)
+				if tt := le.Uint16(o[12:]); len(ids) == 0 && tt >= 1 && tt <= 3 {
+					ids = scriptTrainersDeep(read, script)
+				}
+				for _, id := range ids {
 					if !seen[id] {
 						seen[id] = true
 						m.Trainers = append(m.Trainers, id)
