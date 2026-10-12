@@ -20,7 +20,7 @@ export default function TrainerCard({ slug, t }: { slug: string; t: Trainer }) {
   );
 }
 
-function Team({ slug, party }: { slug: string; party: Trainer["party"] }) {
+export function Team({ slug, party }: { slug: string; party: Trainer["party"] }) {
   return (
     <div className="table-wrap">
       <table>

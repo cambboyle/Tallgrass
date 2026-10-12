@@ -40,7 +40,7 @@ export const GUIDES: Record<string, Guide> = {
       "The Journey: catches, faints and new routes logged automatically, with an optional Nuzlocke view",
       "All 25 PC boxes, live and from save files",
       "Every save backed up as a new version, so a bad save can be rolled back",
-      "Trainers, items and maps documented on this site",
+      "Every trainer, plus a Bosses page with each gym leader, Elite Four member, rival and villain boss and their teams, documented on this site",
     ],
     caveats: [
       "Hidden abilities show the regular ability, because the game's hidden-ability flag isn't decoded yet.",
@@ -79,7 +79,7 @@ export const GUIDES: Record<string, Guide> = {
       "The Journey with an optional Nuzlocke view",
       "All 25 PC boxes, live and from save files",
       "Versioned save backups",
-      "Trainers, items and maps documented on this site",
+      "Every trainer, plus a Bosses page with each gym leader, Elite Four member, rival and villain boss and their teams, documented on this site",
     ],
     caveats: [
       "Hidden abilities show the regular ability, because the hidden-ability flag isn't decoded yet.",
@@ -121,7 +121,7 @@ export const GUIDES: Record<string, Guide> = {
       "All 30 PC boxes, live",
       "The Journey, including PC catches with real names and levels",
       "Versioned backups of your `.dsv` save",
-      "Trainers, shops and items documented on this site, including this hack's own shop stock",
+      "Every trainer, a Bosses page with each gym leader, Elite Four member, rival and villain boss and their teams, plus shops and items, including this hack's own shop stock",
     ],
     caveats: [
       "DS memory moves while the game runs, so roughly one live read in ten fails. Tallgrass keeps the last good party, so you shouldn't notice.",
@@ -165,7 +165,7 @@ export const GUIDES: Record<string, Guide> = {
       "Grindless Mode levels are worked out the way the game does it, for your party and boxes",
       "All 21 PC boxes, live and from save files",
       "The Journey, including PC catches",
-      "Species, learnsets, evolutions and about 940 trainers documented on this site, including each trainer's second team where the game has one",
+      "Species, learnsets, evolutions and about 940 trainers documented on this site, with a Bosses page for gym leaders, the Elite Four, the champion and the villain teams (including each trainer's second team where the game has one)",
     ],
     caveats: [
       "Trainer levels scale during battle, so the trainers pages show \"scales\" instead of a level.",
