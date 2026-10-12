@@ -45,6 +45,7 @@ func TestCloudSync(t *testing.T) {
 	link := filepath.Join(dir, "link.json")
 	s.EnableCloud(cloud.New(srv.URL, "anon"), link, "https://example.com")
 	s.EnableCloudSync(filepath.Join(dir, "sync.json"))
+	defer s.cloud.sync.started.Wait() // the run that switching it on starts writes into dir
 
 	s.syncOnce() // off: nothing
 	if len(got) != 0 {

@@ -31,6 +31,7 @@ type syncState struct {
 	LastErr  string          `json:"lastError"`
 	Sent     int             `json:"sent"` // versions uploaded in all
 	enabled  bool
+	started  sync.WaitGroup // syncs started by switching it on (tests wait for them)
 }
 
 // SyncView is the Account page's cloud backup status.
@@ -188,7 +189,12 @@ func (s *Server) handleCloudSync(w http.ResponseWriter, r *http.Request) {
 		st.enabled = req.Enabled
 		st.mu.Unlock()
 		if req.Enabled {
-			go s.syncOnce() // start now rather than in up to 10 minutes
+			// Start now rather than in up to 10 minutes.
+			st.started.Add(1)
+			go func() {
+				defer st.started.Done()
+				s.syncOnce()
+			}()
 		}
 	}
 	st.mu.Lock()
