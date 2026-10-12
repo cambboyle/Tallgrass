@@ -138,6 +138,52 @@ export const GUIDES: Record<string, Guide> = {
       { label: "hg-engine", url: "https://github.com/BluRosie/hg-engine", note: "The engine the hack is built on." },
     ],
   },
+
+  rowe: {
+    tagline: "An open-world Hoenn with 16 badges, every Pokémon from Gen 1 to 9, and a pile of game modes.",
+    author: "Rioluwott",
+    base: "Pokémon Emerald (GBA), built from the pokeemerald decomp",
+    version: "The Mega Update, 2.1.1",
+    about: [
+      "R.O.W.E. (a wide-open sandbox) turns Hoenn, and the Sevii Islands, into a game you can tackle in any order. Pokémon from all nine generations are available from the start, and the game scales levels so no area is out of reach, so building a team doesn't need breeding or grinding.",
+      "It's built from the decomp rather than on CFRU, so it stores Pokémon in its own format. Tallgrass reads that directly, which is why it has its own profile.",
+    ],
+    highlights: [
+      "16 badges, and the Sevii Islands, which you need to finish the game",
+      "Gen 1–9 Pokémon from the start, with regional forms, Mega Evolution, DexNav, reusable TMs and nature mints",
+      "Difficulty options (Easy, Normal and Hard; once started you can only lower it) with level caps tied to gym progress",
+      "Grindless Mode: levels are replaced by stats scaled to your badge count, and you set EVs yourself on the Summary screen",
+      "Trainer Skills: spend points on upgrades such as Stat Boosts, which give every Pokémon you own IVs, and bonus-battle and XP skills",
+      "Delta Boost (from the Mega Update): Pokémon that can't Mega Evolve can boost with a Delta Orb",
+      "Many optional modes, such as Double Battle, No EVs, Inverse, Monotype, Little Cup, randomizers and Gym Shuffle (the hack's docs list them all)",
+      "New Game Plus, which restarts you at level 1 but keeps stats, natures and items",
+    ],
+    withTallgrass: [
+      "Live party with levels, moves, nature and EVs. IVs are shown with a star, because the game gives every Pokémon the same IVs from your Stat Boost skills (1 at skill level 0, up to 31 at level 10), and Tallgrass reads those skills",
+      "Forms are shown as their own species (Alolan Meowth, not Meowth), and ability names appear",
+      "Route encounters by time of day, including DexNav's hidden encounters and Headbutt trees, with seen and caught marks",
+      "Grindless Mode levels are worked out the way the game does it, for your party and boxes",
+      "All 21 PC boxes, live and from save files",
+      "The Journey, including PC catches",
+      "Species, learnsets, evolutions and about 940 trainers documented on this site, including each trainer's second team where the game has one",
+    ],
+    caveats: [
+      "Trainer levels scale during battle, so the trainers pages show \"scales\" instead of a level.",
+      "Gym leaders aren't placed on the maps yet (their battles start differently), though they're listed.",
+      "Tallgrass can't tell when the game is using its alternate team for a trainer, and shows both.",
+      "OpenHome doesn't support R.O.W.E. saves.",
+      "R.O.W.E. isn't one of the Setup page's choices yet. Its emulator settings are the same as the other GBA games', so choosing any GBA game on Setup applies them.",
+    ],
+    start: [
+      "Get the game from the official thread. Tallgrass doesn't download or share ROMs: use the patch or build the thread points to, on your own copy of Emerald.",
+      "Put the ROM in your RetroPie `gba` folder. Tallgrass recognises version 2.1.1 by its checksum, so another version may show as \"not supported yet\" on the Library page.",
+      "Open Tallgrass → Setup and choose any GBA game. The emulator settings it fixes (RetroArch network commands, autosave) are shared by every GBA game; ignore its ROM check for the game you chose.",
+      "Play. Your party shows up on the dashboard, and the game's saves are backed up as they change.",
+    ],
+    links: [
+      { label: "R.O.W.E. 2.0 on PokéCommunity", url: "https://www.pokecommunity.com/threads/pokemon-r-o-w-e-2-0-an-open-world-version-of-pok%C3%A9mon-emerald-gen-9-16-badges-sevii-islands-following-pok%C3%A9mon-costumes-and-much-more.442592/", note: "The official thread: releases and updates. The hack's own FAQ, game modes and Trainer Skills pages are in a spreadsheet linked from it, and the game has an Information option in the Start menu." },
+    ],
+  },
 };
 
 export const hasGuide = (slug: string) => slug in GUIDES;
