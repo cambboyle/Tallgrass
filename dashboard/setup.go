@@ -19,7 +19,7 @@ import (
 
 // The setup wizard prepares one game: the player picks it, and we check
 // (and where we can, fix) everything that game needs, then confirm a live
-// read. Only the three focus games are offered.
+// read. Only the focus games are offered.
 
 type setupGame struct {
 	Slug     string   `json:"slug"`
@@ -37,6 +37,8 @@ var setupGames = []setupGame{
 		SHA1: []string{"b4776b82a4c7915d0fadeaa27e013523f99dfd94"}},
 	{Slug: "heartgold-generations", Name: "HeartGold Generations", System: "nds", Emulator: "drastic",
 		SHA1: []string{"d8fcc9de74ecc7e38caed8be883bd602653c3736"}, Version: "HeartGold Generations 2.0"},
+	{Slug: "rowe", Name: "Pokémon R.O.W.E.", System: "gba", Emulator: "retroarch",
+		SHA1: []string{"ab2196855ac47598cb2ef7ebff475d6ed17b1992"}, Version: "Pokémon R.O.W.E. 2.1.1"},
 }
 
 // setupPaths are the RetroPie locations the wizard checks and edits.

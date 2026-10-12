@@ -3,8 +3,11 @@ package dashboard
 import (
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
+
+	"tallgrass/profile"
 )
 
 func TestSetConfigValue(t *testing.T) {
@@ -40,5 +43,30 @@ func TestSetConfigValue(t *testing.T) {
 func TestBlankSave(t *testing.T) {
 	if !blank([]byte{0xFF, 0xFF, 0}) || blank([]byte{0xFF, 1}) {
 		t.Error("blank")
+	}
+}
+
+// Every GBA game the wizard offers has a bundled profile for the same ROM,
+// so the live read can work once the wizard finds it.
+func TestSetupGamesHaveProfiles(t *testing.T) {
+	all, err := profile.All()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, g := range setupGames {
+		if g.System != "gba" {
+			continue // DS games need no profile
+		}
+		found := false
+		for _, p := range all {
+			for _, sum := range p.ROMSHA1 {
+				if slices.Contains(g.SHA1, sum) {
+					found = true
+				}
+			}
+		}
+		if !found {
+			t.Errorf("%s: no bundled profile for its ROM", g.Slug)
+		}
 	}
 }

@@ -172,12 +172,11 @@ export const GUIDES: Record<string, Guide> = {
       "Gym leaders aren't placed on the maps yet (their battles start differently), though they're listed.",
       "Tallgrass can't tell when the game is using its alternate team for a trainer, and shows both.",
       "OpenHome doesn't support R.O.W.E. saves.",
-      "R.O.W.E. isn't one of the Setup page's choices yet. Its emulator settings are the same as the other GBA games', so choosing any GBA game on Setup applies them.",
     ],
     start: [
       "Get the game from the official thread. Tallgrass doesn't download or share ROMs: use the patch or build the thread points to, on your own copy of Emerald.",
       "Put the ROM in your RetroPie `gba` folder. Tallgrass recognises version 2.1.1 by its checksum, so another version may show as \"not supported yet\" on the Library page.",
-      "Open Tallgrass → Setup and choose any GBA game. The emulator settings it fixes (RetroArch network commands, autosave) are shared by every GBA game; ignore its ROM check for the game you chose.",
+      "Open Tallgrass → Setup, choose Pokémon R.O.W.E., and follow the checks. It also sets up RetroArch's network commands and autosave if they're off.",
       "Play. Your party shows up on the dashboard, and the game's saves are backed up as they change.",
     ],
     links: [
