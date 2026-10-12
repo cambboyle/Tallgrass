@@ -22,7 +22,8 @@
     "mapSection": "0x02036E10",
     "mapNames": "[0x080C0C94]",
     "firstMapSection": 88,
-    "mapGroups": "0x083526A4"
+    "mapGroups": "0x08B70498",
+    "mapGroupsXor": "0x00B749DE"
   },
   "wildEncounters": {
     "headers": "[0x08082990]",

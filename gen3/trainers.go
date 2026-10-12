@@ -119,8 +119,8 @@ func isROMPointer(p uint32) bool { return p >= 0x08000000 && p < 0x0A000000 }
 
 // TrainerMaps finds which maps each trainer stands on (see ReadMaps).
 // Returns trainer ID -> maps.
-func TrainerMaps(read ReadMemory, groups uint32) (map[int][][2]uint8, error) {
-	maps, err := ReadMaps(read, groups)
+func TrainerMaps(read ReadMemory, groups, xor uint32) (map[int][][2]uint8, error) {
+	maps, err := ReadMaps(read, groups, xor)
 	if err != nil {
 		return nil, err
 	}

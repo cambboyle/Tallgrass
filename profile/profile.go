@@ -200,10 +200,14 @@ type Trainer struct {
 }
 
 type Location struct {
-	MapID           Ref `json:"mapId"`           // map group byte, then map number
-	MapSection      Ref `json:"mapSection"`      // region map section of the current map
-	MapNames        Ref `json:"mapNames"`        // table of entries holding pointers to map names
-	MapGroups       Ref `json:"mapGroups"`       // gMapGroups: map headers by group and number
+	MapID      Ref `json:"mapId"`      // map group byte, then map number
+	MapSection Ref `json:"mapSection"` // region map section of the current map
+	MapNames   Ref `json:"mapNames"`   // table of entries holding pointers to map names
+	MapGroups  Ref `json:"mapGroups"`  // gMapGroups: map headers by group and number
+	// MapGroupsXor is set when the game scrambles its group table: each
+	// entry is the list pointer XOR this key (Unbound's own header lookup,
+	// at 0x09ED15D4, does `list = table[group] ^ 0x00B749DE`).
+	MapGroupsXor    Ref `json:"mapGroupsXor,omitempty"`
 	FirstMapSection int `json:"firstMapSection"` // section of mapNames[0]
 	// Entry size and where the name pointer sits in it: FireRed has bare
 	// pointers (4, 0); Emerald has region map entries (x, y, w, h, name: 8, 4).

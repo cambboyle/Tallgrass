@@ -54,7 +54,7 @@ func (rc *romContext) buildMaps() {
 	if err != nil {
 		return
 	}
-	list, err := gen3.ReadMaps(rc.rom.Read, groups)
+	list, err := gen3.ReadMaps(rc.rom.Read, groups, rc.prof.Location.MapGroupsXor.Addr)
 	if err != nil {
 		log.Printf("%s: maps: %v", rc.prof.Name, err)
 		return

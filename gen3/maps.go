@@ -35,10 +35,13 @@ var directions = map[byte]string{1: "south", 2: "north", 3: "west", 4: "east", 5
 // map header pointers; the lists sit back to back, so one ends where the
 // next begins.
 //
+// xor is the key some hacks scramble the group table with (zero for none):
+// each table entry is the list pointer XOR the key.
+//
 // Map header: layout, events, map scripts, connections (pointers), music,
 // layout ID, region map section (byte 0x14). Events: counts of people,
 // warps, coord events and background events, then a pointer to each list.
-func ReadMaps(read ReadMemory, groups uint32) ([]MapData, error) {
+func ReadMaps(read ReadMemory, groups, xor uint32) ([]MapData, error) {
 	le := binary.LittleEndian
 	ptr := func(addr uint32) uint32 {
 		b, err := read(addr, 4)
@@ -49,7 +52,7 @@ func ReadMaps(read ReadMemory, groups uint32) ([]MapData, error) {
 	}
 	var lists []uint32
 	for g := 0; g < 64; g++ {
-		p := ptr(groups + uint32(g*4))
+		p := ptr(groups+uint32(g*4)) ^ xor
 		// The table ends at the first non-pointer, or at a pointer back into
 		// the table itself (Unbound has one right after its last group).
 		if !isROMPointer(p) || (p >= groups && p < groups+64*4) {

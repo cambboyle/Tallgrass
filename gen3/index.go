@@ -58,14 +58,14 @@ type Found struct {
 // MapSections reads a map's region map section from the game's map header
 // table (gMapGroups: per group, a list of map header pointers; the section
 // is byte 0x14 of a header).
-func MapSections(read ReadMemory, groups uint32) func(group, num uint8) (int, error) {
+func MapSections(read ReadMemory, groups, xor uint32) func(group, num uint8) (int, error) {
 	le := binary.LittleEndian
 	return func(group, num uint8) (int, error) {
 		g, err := read(groups+uint32(group)*4, 4)
 		if err != nil {
 			return 0, err
 		}
-		h, err := read(le.Uint32(g)+uint32(num)*4, 4)
+		h, err := read(le.Uint32(g)^xor+uint32(num)*4, 4)
 		if err != nil {
 			return 0, err
 		}

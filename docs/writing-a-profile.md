@@ -100,7 +100,8 @@ These are the methods used for Pokémon R.O.W.E., a decomp hack where almost not
 | `mapNames` | Table of entries pointing at area names. |
 | `firstMapSection` | The section of the table's first entry (FireRed: `0x58`; Emerald: 0). |
 | `mapNameStride`, `mapNameOffset` | Entry size and where the name pointer is in it (FireRed 4 and 0, Emerald 8 and 4). |
-| `mapGroups` | `gMapGroups`, for items, shops, trainers and exits on each map. |
+| `mapGroups` | `gMapGroups`, for items, shops, trainers and exits on each map. Prefer a code reference (`[0x0805524C]` in FireRed engines) so it follows repoints. **Check it's the table the game really uses:** the vanilla table can be left behind, unused. In Unbound the original lookup function is replaced by a jump to new code, and the table you'd find by its old address holds only the original Kanto maps. |
+| `mapGroupsXor` | Optional key, when the game scrambles its group table (each entry is the list pointer XOR this key). Unbound: table `0x08B70498`, key `0x00B749DE`, found by disassembling the function its lookup jumps to (`0x09ED15D4`). Symptoms of a wrong table: a save's current map (group at SaveBlock1 + 4, number at + 5) isn't among the maps read, and many maps come out unnamed. |
 
 ### `wildEncounters`
 

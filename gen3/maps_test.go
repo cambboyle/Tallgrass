@@ -70,7 +70,7 @@ func TestReadMapsSkipsErasedSlots(t *testing.T) {
 		0x08100000: make([]byte, 16), 0x08200000: make([]byte, 16),
 	}.read
 
-	maps, err := ReadMaps(read, groups)
+	maps, err := ReadMaps(read, groups, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -127,12 +127,43 @@ func TestDeepTrainerScripts(t *testing.T) {
 		{"a trainer object", 1, []int{6}},
 		{"a plain NPC", 0, nil},
 	} {
-		maps, err := ReadMaps(build(c.trainerType), groups)
+		maps, err := ReadMaps(build(c.trainerType), groups, 0)
 		if err != nil || len(maps) != 1 {
 			t.Fatalf("%s: %v %+v", c.name, err, maps)
 		}
 		if !slices.Equal(maps[0].Trainers, c.want) {
 			t.Errorf("%s: trainers = %v, want %v", c.name, maps[0].Trainers, c.want)
 		}
+	}
+}
+
+// Unbound scrambles its map group table: each entry is the list pointer
+// XORed with a key (its own header lookup does table[group] ^ 0x00B749DE).
+// With the key, maps are found and named; without it nothing makes sense.
+func TestMapGroupsXor(t *testing.T) {
+	const groups, list0, hdr, events = 0x08350000, 0x08351000, 0x08352000, 0x08353000
+	const key = 0x00B749DE
+
+	table := make([]byte, 8)
+	put(table, 0, list0^key)
+	lst := make([]byte, 4)
+	put(lst, 0, hdr)
+	ev := make([]byte, 20) // no people, warps or events
+	read := regions{
+		groups: table, list0: lst, hdr: mapHeaderBytes(events, 0x42), events: ev,
+		0x08100000: make([]byte, 16),
+	}.read
+
+	maps, err := ReadMaps(read, groups, key)
+	if err != nil || len(maps) != 1 || maps[0].Section != 0x42 {
+		t.Fatalf("with the key: %v %+v", err, maps)
+	}
+	if maps, _ := ReadMaps(read, groups, 0); len(maps) != 0 {
+		t.Errorf("without the key: read %d maps from scrambled entries", len(maps))
+	}
+
+	section, err := MapSections(read, groups, key)(0, 0)
+	if err != nil || section != 0x42 {
+		t.Errorf("MapSections with the key = %d, %v", section, err)
 	}
 }

@@ -86,7 +86,8 @@ Launch supports three games, done properly: **Radical Red, HeartGold Generations
 - [x] **Versioned JSON export** (2026-10-09): `tallgrass -export game.gba` or Library → Export data (`GET /api/export?rom=`). Species (stats, moves, evolutions, where to find) and trainers, keyed by ROM SHA-1; format in `docs/gamedata-export.md` (version 1).
 
 - [x] **Trainer placement** (2026-10-12, v0.1.26): the map reader skips erased map slots, ignores a group table's trailing self-pointer and follows trainer NPCs' scripts deeper, so more trainers get a place on the docs site and the Bosses pages. Radical Red 452 → 477 of 741 placed (key trainers 10 → 26 of 79: Brock in Pewter, the Elite Four at the Pokémon League…), Unbound 132 → 256 of 742 (105 more maps read), R.O.W.E. unchanged. Re-uploaded for Radical Red and Unbound.
-- [ ] **Unbound's bosses and the rest of its maps:** none of its 98 leaders, Elite Four members and rivals are placed; some real maps sit in lists we can't find (the vanilla group table has no code references). Needs Unbound's real map-group table (see CLAUDE.md, "Trainers and export").
+- [x] **Unbound's real map table** (2026-10-12, v0.1.27): Unbound scrambles its map-group table (XOR key `0x00B749DE`, table `0x08B70498`) and the profile read the dead vanilla one. Now 772 maps (was 325) and 448 of 742 trainers placed (was 132); encounter areas are named.
+- [ ] **Unbound's bosses:** none of its 98 leaders, Elite Four members and rivals are placed; their battles aren't ordinary `trainerbattle` commands (see CLAUDE.md, "Trainers and export").
 
 ### M4: Cloud platform
 - [x] **API and database** (2026-10-09): Supabase (project `ifjlueqhuyaafjuzltoi`, London): schema in `supabase/migrations/`, Edge Functions in `supabase/functions/`. No separate API server for now.

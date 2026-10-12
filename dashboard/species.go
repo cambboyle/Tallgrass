@@ -209,7 +209,7 @@ func (rc *romContext) areaNamer() func(g, n uint8) (string, int) {
 	if err != nil {
 		return nil
 	}
-	section := gen3.MapSections(read, groups)
+	section := gen3.MapSections(read, groups, p.Location.MapGroupsXor.Addr)
 	stride, offset := p.Location.MapNameTable()
 	return func(g, n uint8) (string, int) {
 		sec, err := section(g, n)
