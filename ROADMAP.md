@@ -85,6 +85,9 @@ Launch supports three games, done properly: **Radical Red, HeartGold Generations
 - [x] **Hack-specific evolution methods** (2026-10-09): CFRU 16–28 (rain, move type, party type, location, gender, day/night, held item, move, party member, time range), Mega/Gigantamax, and each hack's later numbering (`evolutionScheme`: radical-red, unbound); HeartGold Generations' 27–36. Radical Red's Fairy type name comes from its second type table (`[0x080D8510]`).
 - [x] **Versioned JSON export** (2026-10-09): `tallgrass -export game.gba` or Library → Export data (`GET /api/export?rom=`). Species (stats, moves, evolutions, where to find) and trainers, keyed by ROM SHA-1; format in `docs/gamedata-export.md` (version 1).
 
+- [x] **Trainer placement** (2026-10-12, v0.1.26): the map reader skips erased map slots, ignores a group table's trailing self-pointer and follows trainer NPCs' scripts deeper, so more trainers get a place on the docs site and the Bosses pages. Radical Red 452 → 477 of 741 placed (key trainers 10 → 26 of 79: Brock in Pewter, the Elite Four at the Pokémon League…), Unbound 132 → 256 of 742 (105 more maps read), R.O.W.E. unchanged. Re-uploaded for Radical Red and Unbound.
+- [ ] **Unbound's bosses and the rest of its maps:** none of its 98 leaders, Elite Four members and rivals are placed; some real maps sit in lists we can't find (the vanilla group table has no code references). Needs Unbound's real map-group table (see CLAUDE.md, "Trainers and export").
+
 ### M4: Cloud platform
 - [x] **API and database** (2026-10-09): Supabase (project `ifjlueqhuyaafjuzltoi`, London): schema in `supabase/migrations/`, Edge Functions in `supabase/functions/`. No separate API server for now.
 - [x] **Accounts** (2026-10-09): Discord, GitHub and email sign-in links on https://tallgrass-delta.vercel.app. Verified with Cam's Discord sign-in.
