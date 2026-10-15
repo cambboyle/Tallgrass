@@ -1,6 +1,7 @@
 package dashboard
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"slices"
@@ -8,6 +9,7 @@ import (
 	"testing"
 
 	"tallgrass/profile"
+	"tallgrass/saves"
 )
 
 func TestSetConfigValue(t *testing.T) {
@@ -68,5 +70,45 @@ func TestSetupGamesHaveProfiles(t *testing.T) {
 		if !found {
 			t.Errorf("%s: no bundled profile for its ROM", g.Slug)
 		}
+	}
+}
+
+// The catalogue and the wizard describe the same games: each wizard game is in
+// the catalogue with the same supported-build SHA-1, and the same system.
+func TestSetupGamesMatchCatalog(t *testing.T) {
+	for _, g := range setupGames {
+		h := knownHacks.Hack(g.Slug)
+		if h == nil {
+			t.Errorf("%s isn't in catalog/hacks.json", g.Slug)
+			continue
+		}
+		if h.System != g.System {
+			t.Errorf("%s: wizard says %s, catalogue says %s", g.Slug, g.System, h.System)
+		}
+		if !slices.Equal(h.Result.SHA1, g.SHA1) {
+			t.Errorf("%s: wizard SHA-1 %v, catalogue %v", g.Slug, g.SHA1, h.Result.SHA1)
+		}
+	}
+}
+
+// With no ROM in the folder, the wizard says who made the game, what to patch,
+// and links to the official page.
+func TestSetupMissingROMUsesCatalog(t *testing.T) {
+	dir := t.TempDir()
+	w := saves.NewWatcher([]saves.Source{{System: "gba", SaveDir: dir, ROMDir: dir}}, saves.NewBackups(t.TempDir()))
+	s := New(testProfile, func(uint32, int) ([]byte, error) { return nil, errors.New("no game") })
+	s.EnableSaves(w, nil)
+
+	_, c, _ := s.setupROM(findSetupGame("rowe"))
+	if c.Status != "todo" {
+		t.Fatalf("status = %q: %+v", c.Status, c)
+	}
+	for _, want := range []string{"Rioluwott", "Pokémon Emerald (USA, Europe)", "official patch", "ab2196855ac47598cb2ef7ebff475d6ed17b1992"} {
+		if !strings.Contains(c.Detail, want) {
+			t.Errorf("detail is missing %q: %s", want, c.Detail)
+		}
+	}
+	if !strings.HasPrefix(c.Link, "https://www.pokecommunity.com/") || c.LinkText == "" {
+		t.Errorf("link = %q %q", c.Link, c.LinkText)
 	}
 }

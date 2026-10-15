@@ -60,7 +60,8 @@ export default function Guide() {
         <p>
           The setup page asks which game you&apos;re playing, then checks everything that game needs. It fixes what it safely
           can with one button, and tells you what to do for the rest. It re-checks every few seconds, so you can follow
-          along with the game running.
+          along with the game running. Don&apos;t have the game yet? <Link href="/hacks">Where to get each hack</Link> lists
+          the official page, the base game it needs and the checksum to expect.
         </p>
         <div className="grid">
           <div className="stack-sm">

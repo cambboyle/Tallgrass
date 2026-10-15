@@ -343,6 +343,15 @@ Community submissions come in as pull requests to `profiles/`, and get reviewed 
 
 To change what's exported, edit `dashboard/export.go` and keep `docs/gamedata-export.md` in step. Bump `ExportVersion` only when a field changes meaning.
 
+### The hack catalogue
+
+`catalog/hacks.json` (CC0) lists every hack Tallgrass supports: author, version, the base game it needs, a link to its official page (we link, never host ROMs or patches), and the SHA-1 of the build Tallgrass is tested against. It's embedded in the agent (the Setup wizard uses it when your ROM isn't found: it says who made the game, what to patch and links to the page) and read from GitHub by the website's `/hacks` page, so a change on `main` shows within 10 minutes.
+
+- **Add a hack:** add an entry under `hacks` (and its base game under `bases` if new). `go test ./catalog/ ./dashboard/` checks the file hangs together and that the Setup wizard and the catalogue agree on each game's SHA-1.
+- **Only list a checksum you checked** against a real copy (`shasum -a 1 file`). A base game with no checked SHA-1 simply has none, and its `detail` says where to find the right version. A wrong hash can mislead people, a missing one can't.
+- **Links** come from the hack's official thread. Some forums block automated reads, so a person should click each new link once.
+- Slugs match the game's slug in `setupGames`, `profiles/` and the `games` table.
+
 ## 14. Finding data in a game
 
 The methods used so far, roughly in the order to try them. CLAUDE.md records every result.
@@ -413,7 +422,7 @@ The Supabase URL and anon key are public on purpose: they're compiled into the a
 **New game**
 1. Get its ROM SHA-1. Profile it (writing-a-profile.md) and verify it live.
 2. Add it to `profiles/` (the registry ships it).
-3. Optionally: add it to `setupGames` for the setup wizard, to `games` for the website, and upload its data.
+3. Add it to `catalog/hacks.json` (see below), and optionally to `setupGames` for the setup wizard, to `games` for the website, and upload its data.
 
 **Schema or function change**
 1. Add a migration file, apply it, and commit it.

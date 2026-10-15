@@ -12,6 +12,7 @@ export default async function Games() {
       <div className="stack">
         <h1>Games</h1>
         <p className="lead">A guide to each game, and docs generated from the game itself: every species, move list, trainer and wild encounter.</p>
+        <p className="small muted">Looking for the game itself? See <Link href="/hacks">where to get each hack</Link>.</p>
       </div>
       <div className="grid">
         {games.map((g) => (

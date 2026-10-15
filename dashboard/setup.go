@@ -15,6 +15,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"tallgrass/catalog"
 )
 
 // The setup wizard prepares one game: the player picks it, and we check
@@ -29,6 +31,15 @@ type setupGame struct {
 	SHA1     []string `json:"-"`
 	Version  string   `json:"version,omitempty"` // the release we support, when we know its name
 }
+
+// knownHacks is the built-in catalogue of romhacks (catalog/hacks.json).
+var knownHacks = func() *catalog.Catalog {
+	c, err := catalog.Load()
+	if err != nil {
+		log.Fatalf("the built-in hack catalogue is broken: %v", err)
+	}
+	return c
+}()
 
 var setupGames = []setupGame{
 	{Slug: "radical-red", Name: "Pokémon Radical Red", System: "gba", Emulator: "retroarch",
@@ -207,6 +218,12 @@ func (s *Server) setupROM(g *setupGame) (string, SetupCheck, string) {
 		version = "the supported version"
 	}
 	c.Detail = fmt.Sprintf("Copy your %s ROM (%s) into %s. Tallgrass recognises the exact file by its SHA-1, %s.", g.Name, version, dir, g.SHA1[0])
+	// Say where the game comes from: the catalogue knows its author, the base
+	// game to patch and the official page (Tallgrass never downloads ROMs or patches).
+	if h := knownHacks.Hack(g.Slug); h != nil {
+		c.Detail += fmt.Sprintf(" It's %s's hack of %s: you patch your own copy of that game with the official patch.", h.Author, knownHacks.BaseOf(h).Name)
+		c.Link, c.LinkText = h.Source.URL, "Open the official page"
+	}
 	if len(others) > 0 {
 		c.Detail += " Files there now that aren't it: " + strings.Join(others, ", ") + "."
 	}

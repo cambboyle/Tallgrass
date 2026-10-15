@@ -1,0 +1,92 @@
+{
+  "schema": "tallgrass.catalog",
+  "version": 1,
+  "bases": [
+    {
+      "slug": "firered-us",
+      "name": "Pokémon FireRed (USA)",
+      "system": "gba",
+      "gameCode": "BPRE",
+      "detail": "Which revision a hack wants differs, so check its thread. Radical Red's patcher was used here with a copy named \"1636 - Pokemon Fire Red (U)(Squirrels)\"."
+    },
+    {
+      "slug": "emerald-us",
+      "name": "Pokémon Emerald (USA, Europe)",
+      "system": "gba",
+      "gameCode": "BPEE",
+      "detail": "The copy Tallgrass was tested with.",
+      "sha1": ["f3ae088181bf583e55daf962a92bb46f4f1d07b7"],
+      "crc32": "1F1C08FB"
+    },
+    {
+      "slug": "heartgold-us",
+      "name": "Pokémon HeartGold (USA)",
+      "system": "nds",
+      "gameCode": "IPKE",
+      "detail": "A 128 MB dump, version 0. The copy Tallgrass was tested with.",
+      "sha1": ["4fcded0e2713dc03929845de631d0932ea2b5a37"],
+      "crc32": "C180A0E9"
+    }
+  ],
+  "hacks": [
+    {
+      "slug": "radical-red",
+      "name": "Pokémon Radical Red",
+      "version": "4.1",
+      "author": "soupercell",
+      "system": "gba",
+      "base": "firered-us",
+      "baseNote": "The patch needs a clean FireRed (USA) ROM; the thread says which revision.",
+      "source": {
+        "label": "Radical Red on PokéCommunity",
+        "url": "https://www.pokecommunity.com/threads/pok%C3%A9mon-radical-red-version-4-1-released-gen-9-dlc-pokemon-character-customization-now-available.437688/"
+      },
+      "result": { "sha1": ["964f951a0fdaf209e4ea1344883ef0d557bb3a80"] },
+      "support": "Live party, route encounters, Journey, all 25 PC boxes, saves, and trainers and bosses on the website."
+    },
+    {
+      "slug": "unbound",
+      "name": "Pokémon Unbound",
+      "author": "Skeli",
+      "system": "gba",
+      "base": "firered-us",
+      "baseNote": "Built on FireRed; the thread says which copy it needs.",
+      "source": {
+        "label": "Pokémon Unbound on PokéCommunity",
+        "url": "https://www.pokecommunity.com/threads/pok%C3%A9mon-unbound-completed.382178/"
+      },
+      "result": { "sha1": ["b4776b82a4c7915d0fadeaa27e013523f99dfd94"] },
+      "support": "Live party, route encounters, Journey, all 25 PC boxes, saves, and trainers and bosses on the website."
+    },
+    {
+      "slug": "heartgold-generations",
+      "name": "HeartGold Generations",
+      "version": "2.0",
+      "author": "spearmintz",
+      "system": "nds",
+      "base": "heartgold-us",
+      "baseNote": "Tested: this HeartGold copy plus the hack's xdelta patch gives exactly the build below.",
+      "source": {
+        "label": "HeartGold Generations on PokéCommunity",
+        "url": "https://www.pokecommunity.com/threads/pok%C3%A9mon-heartgold-generations-v2-0.537551/"
+      },
+      "result": { "sha1": ["d8fcc9de74ecc7e38caed8be883bd602653c3736"] },
+      "support": "Live party (through DraStic), route encounters, Journey, all 30 PC boxes, saves, and trainers, shops and bosses on the website."
+    },
+    {
+      "slug": "rowe",
+      "name": "Pokémon R.O.W.E.",
+      "version": "2.1.1 (The Mega Update)",
+      "author": "Rioluwott",
+      "system": "gba",
+      "base": "emerald-us",
+      "baseNote": "Built from the pokeemerald decomp; the thread says whether to patch or build it, and which Emerald it needs.",
+      "source": {
+        "label": "R.O.W.E. 2.0 on PokéCommunity",
+        "url": "https://www.pokecommunity.com/threads/pokemon-r-o-w-e-2-0-an-open-world-version-of-pok%C3%A9mon-emerald-gen-9-16-badges-sevii-islands-following-pok%C3%A9mon-costumes-and-much-more.442592/"
+      },
+      "result": { "sha1": ["ab2196855ac47598cb2ef7ebff475d6ed17b1992"] },
+      "support": "Live party, route encounters, Journey, all 21 PC boxes, saves, and trainers and bosses on the website."
+    }
+  ]
+}
